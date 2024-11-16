@@ -28,7 +28,8 @@ test_percentage:
   stage: evaluate
   script:
     - test_output=$(python3 evaluation.py --file_path ./Output.csv --ground_truth_path ./dataset/groundTruth.csv | grep -e "Score of Category I & II" | cut -c30-)
-    - if [ -n "$test_output" ] && (( $(echo "$test_output" | awk '{if ($1 < 0.4) print 1; else print 0}') )); then echo "Test score is less than 0.4"; exit 1; fi    # TODO: change the 0.4 (from if ($1 < 0.4)) to whatever your "minimum acceptable accuracy" is for where you are in the project, this line causes a Warning if your accuracy is below 0.4
+    - if [ -n "$test_output" ] && (( $(echo "$test_output" | awk '{if ($1 < 0.4) print 1; else print 0}') )); then echo "Test score is less than 0.4"; exit 1; fi    
+    # TODO: change the 0.4 (from if ($1 < 0.4)) to whatever your "minimum acceptable accuracy" is for where you are in the project, this line causes a Warning if your accuracy is below 0.4
   dependencies:
     - run_main
   allow_failure: true
