@@ -14,9 +14,6 @@ build_project:
     - pip install --upgrade pip
     - pip install -r requirements.txt
     - echo "Installed everything!"
-  artifacts:
-    paths:
-      - venv/
 
 run_main:
   stage: run
