@@ -5,7 +5,7 @@ import Localization
 import Recognize
 import matplotlib
 import matplotlib.pyplot as plt
-matplotlib.use('Qt5Agg')
+
 
 
 def CaptureFrame_Process(file_path, sample_frequency, save_path):
