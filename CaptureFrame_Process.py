@@ -3,6 +3,9 @@ import os
 import pandas as pd
 import Localization
 import Recognize
+import matplotlib
+import matplotlib.pyplot as plt
+
 
 
 def CaptureFrame_Process(file_path, sample_frequency, save_path):
@@ -47,7 +50,16 @@ def CaptureFrame_Process(file_path, sample_frequency, save_path):
     print(frames)
 
     # TODO: Implement actual algorithms for Localizing Plates
-    Localization.plate_detection(frame)
+    for frame in frames:
+        # Localization.plate_detection(frame)
+
+        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        plt.imshow(frame)
+        plt.show()
+
+        print(type(frame), frame.shape)
+
+        break
 
     # TODO: Implement actual algorithms for Recognizing Characters
 
