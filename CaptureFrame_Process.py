@@ -53,13 +53,13 @@ def CaptureFrame_Process(file_path, sample_frequency, save_path):
     # TODO: Implement actual algorithms for Localizing Plates
     count=0
     for frame in frames:
-        # Localization.plate_detection(frame)
+        Localization.plate_detection(frame)
 
-        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        plt.imshow(frame)
-        plt.show()
+        # frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        # plt.imshow(frame)
+        # plt.show()
 
-        print(type(frame), frame.shape)
+        # print(type(frame), frame.shape)
 
         count+=1
         if (count==10):
