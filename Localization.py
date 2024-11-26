@@ -36,7 +36,7 @@ def yellowMask(image):
 
     imageYellow=cv2.bitwise_and(image,image, mask=mask)
 
-    checkRatio(image, mask)
+    cropPlate(image, mask)
 
     # cv2.imshow("yellow",mask)
     # cv2.waitKey(0)
@@ -51,7 +51,7 @@ def yellowMask(image):
 
 
 
-def checkRatio(image, mask):
+def cropPlate(image, mask):
     contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
     for contour in contours:
@@ -75,9 +75,13 @@ def checkRatio(image, mask):
             allPixelsInTheRectangle = w * h
             ratio = 0 if allPixelsInTheRectangle == 0 else nonZeroPixelsInTheRectangle / allPixelsInTheRectangle
 
-            if ratio >= 0.5:
+            counter = 60;
+
+            if ratio >= 0.5 and counter>=50:
                 flag = False  # Valid ratio, below .5 weirdly situated plates are not included
+
             else:
+                counter=counter-1;
                 x += 1
                 y += 1
                 w -= 2
