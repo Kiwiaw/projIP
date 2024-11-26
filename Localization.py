@@ -73,7 +73,7 @@ def checkRatio(image, mask):
 
             nonZeroPixelsInTheRectangle = cv2.countNonZero(roi)
             allPixelsInTheRectangle = w * h
-            ratio = nonZeroPixelsInTheRectangle / allPixelsInTheRectangle
+            ratio = 0 if allPixelsInTheRectangle == 0 else nonZeroPixelsInTheRectangle / allPixelsInTheRectangle
 
             if ratio >= 0.5:
                 flag = False  # Valid ratio, below .5 weirdly situated plates are not included
