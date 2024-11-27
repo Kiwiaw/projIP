@@ -32,6 +32,7 @@ def CaptureFrame_Process(file_path, sample_frequency, save_path):
     interval  =  int(sample_frequency*framesPerSecond)
     flag = True
     while (flag):
+        cam.set(cv2.CAP_PROP_POS_FRAMES, frameName)
         ret, frame = cam.read()
         if ret:
 
@@ -50,16 +51,19 @@ def CaptureFrame_Process(file_path, sample_frequency, save_path):
     print(frames)
 
     # TODO: Implement actual algorithms for Localizing Plates
+    count=0
     for frame in frames:
-        # Localization.plate_detection(frame)
+        Localization.plate_detection(frame)
 
-        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        plt.imshow(frame)
-        plt.show()
+        # frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        # plt.imshow(frame)
+        # plt.show()
 
-        print(type(frame), frame.shape)
+        # print(type(frame), frame.shape)
 
-        break
+        count+=1
+        if (count==10):
+            break
 
     # TODO: Implement actual algorithms for Recognizing Characters
 
