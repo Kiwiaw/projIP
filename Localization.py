@@ -60,10 +60,10 @@ def cropPlate(image, mask):
             continue
 
         x, y, w, h = cv2.boundingRect(contour)
-
+        counter = 30;
 
         flag = True
-        while flag:
+        while flag and counter>0:
             roi = mask[y:y + h, x:x + w]
 
             #already cropped plates but I leave it here since it might be useful later
@@ -75,9 +75,9 @@ def cropPlate(image, mask):
             allPixelsInTheRectangle = w * h
             ratio = 0 if allPixelsInTheRectangle == 0 else nonZeroPixelsInTheRectangle / allPixelsInTheRectangle
 
-            counter = 60;
 
-            if ratio >= 0.5 and counter>=50:
+
+            if ratio >= 0.5 :
                 flag = False  # Valid ratio, below .5 weirdly situated plates are not included
 
             else:
