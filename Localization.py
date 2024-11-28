@@ -40,7 +40,7 @@ def yellowMask(image):
 
 def blackMask(image):
     lower = np.array([0, 0, 0])
-    upper = np.array([180, 255, 50])
+    upper = np.array([180, 255, 65])
 
     return applyMask(image, lower, upper)
 
@@ -61,10 +61,15 @@ def applyMask(image, lower, upper):
 
 def cropPlate(image, mask):
     contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    # cv2.imshow("Image After Crop", mask)
+    # cv2.waitKey(0)
+    # cv2.destroyAllWindows()
+    MIN_AREA = 1500
 
     for contour in contours:
+
         rectangle = cv2.contourArea(contour)
-        if rectangle < 700:
+        if rectangle < MIN_AREA:
             continue
 
         x, y, w, h = cv2.boundingRect(contour)
@@ -73,6 +78,10 @@ def cropPlate(image, mask):
         flag = True
         while flag and counter>0:
             roi = mask[y:y + h, x:x + w]
+            # Testing purposes
+            # cv2.imshow("Image After Crop", roi)
+            # cv2.waitKey(0)
+            # cv2.destroyAllWindows()
 
             #already cropped plates but I leave it here since it might be useful later
             # nonZeroRectangle = cv2.findNonZero(roi)
