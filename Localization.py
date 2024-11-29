@@ -20,7 +20,10 @@ def plate_detection(image):
         2. You may need to define two ways for localizing plates(yellow or other colors)
     """
 
-    yellowMask(image)
+    # plate = yellowMask(image)
+    # plate = whiteMask(image)
+    plate = blackMask(image)
+    return plate
     # TODO: Replace the below lines with your code.
     # plate_images = [image, image, image]
     # return plate_images
@@ -28,35 +31,45 @@ def plate_detection(image):
 
 
 def yellowMask(image):
-    image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
-    lower =np.array([12, 70, 60])
+    lower = np.array([12, 70, 60])
     upper = np.array([35,255,255])
+
+    return applyMask(image, lower, upper)
+
+
+
+def blackMask(image):
+    lower = np.array([0, 0, 0])
+    upper = np.array([180, 255, 65])
+
+    return applyMask(image, lower, upper)
+
+def whiteMask(image):
+   lower = np.array([0, 0, 200])           
+   upper = np.array([180, 55, 255])
+
+   return applyMask(image, lower, upper)
+
+def applyMask(image, lower, upper):
+    image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
 
     mask = cv2.inRange(image, lower, upper)
 
-    imageYellow=cv2.bitwise_and(image,image, mask=mask)
+    image = cv2.bitwise_and(image,image, mask=mask)
 
-    cropPlate(image, mask)
-
-    # cv2.imshow("yellow",mask)
-    # cv2.waitKey(0)
-    # cv2.destroyAllWindows()
-
-# def blackMask(image):
-
-
-
-# def whiteMask(image):
-
-
-
+    return cropPlate(image, mask)
 
 def cropPlate(image, mask):
     contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    # cv2.imshow("Image After Crop", mask)
+    # cv2.waitKey(0)
+    # cv2.destroyAllWindows()
+    MIN_AREA = 1500
 
     for contour in contours:
+
         rectangle = cv2.contourArea(contour)
-        if rectangle < 700:
+        if rectangle < MIN_AREA:
             continue
 
         x, y, w, h = cv2.boundingRect(contour)
@@ -65,6 +78,10 @@ def cropPlate(image, mask):
         flag = True
         while flag and counter>0:
             roi = mask[y:y + h, x:x + w]
+            # Testing purposes
+            # cv2.imshow("Image After Crop", roi)
+            # cv2.waitKey(0)
+            # cv2.destroyAllWindows()
 
             #already cropped plates but I leave it here since it might be useful later
             # nonZeroRectangle = cv2.findNonZero(roi)
@@ -88,7 +105,12 @@ def cropPlate(image, mask):
                 h -= 2
 
 
-        plateAfterCrop = image[y:y + h, x:x + w]
+    plateAfterCrop = image[y:y + h, x:x + w]
 
-        plt.imshow(cv2.cvtColor(plateAfterCrop, cv2.COLOR_BGR2RGB))
-        plt.show()
+    plateAfterCrop = cv2.cvtColor(plateAfterCrop, cv2.COLOR_BGR2RGB)
+
+    # cv2.imshow("Image After Crop", plateAfterCrop)
+    # cv2.waitKey(0)
+    # cv2.destroyAllWindows()
+
+    return plateAfterCrop
