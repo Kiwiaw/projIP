@@ -20,9 +20,10 @@ def plate_detection(image):
         2. You may need to define two ways for localizing plates(yellow or other colors)
     """
 
-    # plate = yellowMask(image)
+    plate = yellowMask(image)
     # plate = whiteMask(image)
-    plate = blackMask(image)
+    # plate = blackMask(image)
+    # plate = blueMask(image)
     return plate
     # TODO: Replace the below lines with your code.
     # plate_images = [image, image, image]
@@ -36,7 +37,11 @@ def yellowMask(image):
 
     return applyMask(image, lower, upper)
 
+def blueMask(image):
+    lower = np.array([100, 50, 50])
+    upper = np.array([140, 255, 255])
 
+    return applyMask(image, lower, upper)
 
 def blackMask(image):
     lower = np.array([0, 0, 0])
