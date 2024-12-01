@@ -8,6 +8,8 @@ import matplotlib.pyplot as plt
 
 
 
+
+
 def CaptureFrame_Process(file_path, sample_frequency, save_path):
     """
     In this file, you will define your own CaptureFrame_Process funtion. In this function,
@@ -57,9 +59,12 @@ def CaptureFrame_Process(file_path, sample_frequency, save_path):
     for frameName, frame in frames:
         image, x,y,w,h=Localization.plate_detection(frame)
         listaResults.append(Result(frameName,x,y,w,h, frameName/framesPerSecond))
-        cv2.imshow("Image After Crop", image)
-        cv2.waitKey(0)
-        cv2.destroyAllWindows()
+        # cv2.imshow("Image After Crop", image)
+        # cv2.waitKey(0)
+        # cv2.destroyAllWindows()
+        plt.imshow(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
+        plt.axis('off')
+        plt.show()
         print(f' Time Stamp (in seconds):{listaResults[count].timeFrame}, x:{listaResults[count].x}, '
               f'y:{listaResults[count].y}, w:{listaResults[count].w}, h:{listaResults[count].h} '
               f'and last but not least frame: {listaResults[count].frameNumber}')
