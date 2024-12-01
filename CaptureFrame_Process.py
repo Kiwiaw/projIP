@@ -47,7 +47,8 @@ def CaptureFrame_Process(file_path, sample_frequency, save_path):
 
 
     cam.release()
-    cv2.destroyAllWindows()
+    # cv2.waitKey(0)
+    # cv2.destroyAllWindows()
     print(frames)
 
     # TODO: Implement actual algorithms for Localizing Plates
