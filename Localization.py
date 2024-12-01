@@ -89,7 +89,7 @@ def cropPlate(image, mask):
     # cv2.waitKey(0)
     # cv2.destroyAllWindows()
     MIN_AREA = 1500
-    # x, y, w, h = 0
+    x, y, w, h = 0,0,0,0
     for contour in contours:
 
         rectangle = cv2.contourArea(contour)
@@ -129,6 +129,7 @@ def cropPlate(image, mask):
 
             if (h<=0 or w<=0):
                 flag = False
+                continue
     plateAfterCrop = image[y:y + h, x:x + w]
 
 
