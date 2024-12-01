@@ -57,7 +57,12 @@ def CaptureFrame_Process(file_path, sample_frequency, save_path):
     count=0
     listaResults = []
     for frameName, frame in frames:
+        result = Localization.plate_detection(frame)
+        if result[0] is None:
+            continue
         image, x,y,w,h=Localization.plate_detection(frame)
+        if image is None or image.size == 0:
+            continue
         listaResults.append(Result(frameName,x,y,w,h, frameName/framesPerSecond))
         # cv2.imshow("Image After Crop", image)
         # cv2.waitKey(0)
