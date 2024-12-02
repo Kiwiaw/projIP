@@ -22,12 +22,35 @@ def plate_detection(image):
 
     # plate = yellowMask(image)
     # plate = whiteMask(image)
-    plate = blackMask(image)
-    return plate
+    # plate = blackMask(image)
+
+    # return plate
     # TODO: Replace the below lines with your code.
     # plate_images = [image, image, image]
-    # return plate_images
-    pass
+    # return plate_imag#
+
+
+
+    # cv2.imshow("Image After Crop", image)
+    # cv2.waitKey(0)
+    # cv2.destroyAllWindows()
+    return yellowMask(image)
+
+
+# work in progress
+    # plates = detectMaskAnyColour(image)
+    #
+    # if plates:
+    #     for m in plates:
+    #         if isinstance(m, np.ndarray) and m.size > 0:  # Validate that `m` is a valid numpy array
+    #             cv2.imshow("Detected Plate", m)
+    #             cv2.waitKey(0)
+    #             cv2.destroyAllWindows()
+    #         else:
+    #             print("Skipped invalid plate data.")
+    # else:
+    #     print("No plates detected.")
+    # pass
 
 
 def yellowMask(image):
@@ -45,7 +68,7 @@ def blackMask(image):
     return applyMask(image, lower, upper)
 
 def whiteMask(image):
-   lower = np.array([0, 0, 200])           
+   lower = np.array([0, 0, 200])
    upper = np.array([180, 55, 255])
 
    return applyMask(image, lower, upper)
@@ -60,12 +83,13 @@ def applyMask(image, lower, upper):
     return cropPlate(image, mask)
 
 def cropPlate(image, mask):
+    # plates = []
     contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     # cv2.imshow("Image After Crop", mask)
     # cv2.waitKey(0)
     # cv2.destroyAllWindows()
     MIN_AREA = 1500
-
+    x, y, w, h = 0,0,0,0
     for contour in contours:
 
         rectangle = cv2.contourArea(contour)
@@ -83,10 +107,7 @@ def cropPlate(image, mask):
             # cv2.waitKey(0)
             # cv2.destroyAllWindows()
 
-            #already cropped plates but I leave it here since it might be useful later
-            # nonZeroRectangle = cv2.findNonZero(roi)
-            # nx, ny, nw, nh = cv2.boundingRect(nonZeroRectangle)
-            # x, y, w, h = x + nx, y + ny, nw, nh
+
 
             nonZeroPixelsInTheRectangle = cv2.countNonZero(roi)
             allPixelsInTheRectangle = w * h
@@ -95,6 +116,8 @@ def cropPlate(image, mask):
 
 
             if ratio >= 0.5 :
+
+
                 flag = False  # Valid ratio, below .5 weirdly situated plates are not included
 
             else:
@@ -104,13 +127,31 @@ def cropPlate(image, mask):
                 w -= 2
                 h -= 2
 
-
+            if (h<=0 or w<=0):
+                flag = False
+                continue
     plateAfterCrop = image[y:y + h, x:x + w]
 
-    plateAfterCrop = cv2.cvtColor(plateAfterCrop, cv2.COLOR_BGR2RGB)
+
+
+
+    # plateAfterCrop = cv2.cvtColor(plateAfterCrop, cv2.COLOR_BGR2RGB)
 
     # cv2.imshow("Image After Crop", plateAfterCrop)
     # cv2.waitKey(0)
     # cv2.destroyAllWindows()
 
-    return plateAfterCrop
+    return plateAfterCrop, x,y,w,h
+
+
+
+# def detectMaskAnyColour(image):
+#     plates = []
+#     for mask in [yellowMask, whiteMask, blackMask]:
+#         mask_results, _ = mask(image)
+#         if mask_results:
+#             for plate in mask_results:
+#                 if isinstance(plate, np.ndarray) and plate.size > 0:
+#                     plates.append(plate)
+#
+#     return plates
