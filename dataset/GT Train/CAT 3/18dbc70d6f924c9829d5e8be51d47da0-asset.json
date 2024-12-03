@@ -1,0 +1,92 @@
+{
+    "asset": {
+        "id": "18dbc70d6f924c9829d5e8be51d47da0",
+        "format": "mp4",
+        "state": 2,
+        "type": 3,
+        "name": "trainingvideo.mp4#t=143",
+        "path": "file:C:/Users/Mert/Desktop/Coding%20etc/Image%20Project/ip-team-51/dataset/trainingvideo.mp4#t=143",
+        "size": {
+            "width": 640,
+            "height": 480
+        },
+        "parent": {
+            "format": "mp4",
+            "id": "0caf54bd66ed1ff5a7785e3fa8a15398",
+            "name": "trainingvideo.mp4",
+            "path": "file:C:/Users/Mert/Desktop/Coding%20etc/Image%20Project/ip-team-51/dataset/trainingvideo.mp4",
+            "size": {
+                "width": 640,
+                "height": 480
+            },
+            "state": 1,
+            "type": 2
+        },
+        "timestamp": 143
+    },
+    "regions": [
+        {
+            "id": "omd8k0q6e8",
+            "type": "RECTANGLE",
+            "tags": [
+                "Plate"
+            ],
+            "boundingBox": {
+                "height": 32.167108202105126,
+                "width": 108.75614057908913,
+                "left": 70.83251714005877,
+                "top": 170.443864229765
+            },
+            "points": [
+                {
+                    "x": 70.83251714005877,
+                    "y": 170.443864229765
+                },
+                {
+                    "x": 179.5886577191479,
+                    "y": 170.443864229765
+                },
+                {
+                    "x": 179.5886577191479,
+                    "y": 202.61097243187015
+                },
+                {
+                    "x": 70.83251714005877,
+                    "y": 202.61097243187015
+                }
+            ]
+        },
+        {
+            "id": "I8TwAepzBp",
+            "type": "RECTANGLE",
+            "tags": [
+                "Plate"
+            ],
+            "boundingBox": {
+                "height": 28.825065274151438,
+                "width": 119.93465352595496,
+                "left": 488.8279910932909,
+                "top": 271.12272815355743
+            },
+            "points": [
+                {
+                    "x": 488.8279910932909,
+                    "y": 271.12272815355743
+                },
+                {
+                    "x": 608.7626446192459,
+                    "y": 271.12272815355743
+                },
+                {
+                    "x": 608.7626446192459,
+                    "y": 299.9477934277089
+                },
+                {
+                    "x": 488.8279910932909,
+                    "y": 299.9477934277089
+                }
+            ]
+        }
+    ],
+    "version": "2.2.0"
+}

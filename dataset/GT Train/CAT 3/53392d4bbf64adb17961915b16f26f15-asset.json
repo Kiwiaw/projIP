@@ -1,0 +1,92 @@
+{
+    "asset": {
+        "id": "53392d4bbf64adb17961915b16f26f15",
+        "format": "mp4",
+        "state": 2,
+        "type": 3,
+        "name": "trainingvideo.mp4#t=139",
+        "path": "file:C:/Users/Mert/Desktop/Coding%20etc/Image%20Project/ip-team-51/dataset/trainingvideo.mp4#t=139",
+        "size": {
+            "width": 640,
+            "height": 480
+        },
+        "parent": {
+            "format": "mp4",
+            "id": "0caf54bd66ed1ff5a7785e3fa8a15398",
+            "name": "trainingvideo.mp4",
+            "path": "file:C:/Users/Mert/Desktop/Coding%20etc/Image%20Project/ip-team-51/dataset/trainingvideo.mp4",
+            "size": {
+                "width": 640,
+                "height": 480
+            },
+            "state": 1,
+            "type": 2
+        },
+        "timestamp": 139
+    },
+    "regions": [
+        {
+            "id": "e_-JrR28In",
+            "type": "RECTANGLE",
+            "tags": [
+                "Plate"
+            ],
+            "boundingBox": {
+                "height": 34.25588742248702,
+                "width": 101.23410336067582,
+                "left": 102.1743388834476,
+                "top": 289.50391644908615
+            },
+            "points": [
+                {
+                    "x": 102.1743388834476,
+                    "y": 289.50391644908615
+                },
+                {
+                    "x": 203.40844224412342,
+                    "y": 289.50391644908615
+                },
+                {
+                    "x": 203.40844224412342,
+                    "y": 323.7598038715732
+                },
+                {
+                    "x": 102.1743388834476,
+                    "y": 323.7598038715732
+                }
+            ]
+        },
+        {
+            "id": "gNQcoSGp3h",
+            "type": "RECTANGLE",
+            "tags": [
+                "Plate"
+            ],
+            "boundingBox": {
+                "height": 38.85117493472585,
+                "width": 129.85960838026446,
+                "left": 456.33692458374145,
+                "top": 173.36815896295695
+            },
+            "points": [
+                {
+                    "x": 456.33692458374145,
+                    "y": 173.36815896295695
+                },
+                {
+                    "x": 586.1965329640059,
+                    "y": 173.36815896295695
+                },
+                {
+                    "x": 586.1965329640059,
+                    "y": 212.21933389768282
+                },
+                {
+                    "x": 456.33692458374145,
+                    "y": 212.21933389768282
+                }
+            ]
+        }
+    ],
+    "version": "2.2.0"
+}

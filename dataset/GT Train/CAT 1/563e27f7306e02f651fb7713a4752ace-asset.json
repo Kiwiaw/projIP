@@ -1,0 +1,61 @@
+{
+    "asset": {
+        "id": "563e27f7306e02f651fb7713a4752ace",
+        "format": "mp4",
+        "state": 2,
+        "type": 3,
+        "name": "trainingvideo.mp4#t=67",
+        "path": "file:C:/Users/Mert/Desktop/Coding%20etc/Image%20Project/ip-team-51/dataset/trainingvideo.mp4#t=67",
+        "size": {
+            "width": 640,
+            "height": 480
+        },
+        "parent": {
+            "format": "mp4",
+            "id": "0caf54bd66ed1ff5a7785e3fa8a15398",
+            "name": "trainingvideo.mp4",
+            "path": "file:C:/Users/Mert/Desktop/Coding%20etc/Image%20Project/ip-team-51/dataset/trainingvideo.mp4",
+            "size": {
+                "width": 640,
+                "height": 480
+            },
+            "state": 1,
+            "type": 2
+        },
+        "timestamp": 67
+    },
+    "regions": [
+        {
+            "id": "0A4Y8j1Lq9",
+            "type": "RECTANGLE",
+            "tags": [
+                "Plate"
+            ],
+            "boundingBox": {
+                "height": 38.85117493472585,
+                "width": 153.67939290523998,
+                "left": 329.71596474045054,
+                "top": 248.1462140992167
+            },
+            "points": [
+                {
+                    "x": 329.71596474045054,
+                    "y": 248.1462140992167
+                },
+                {
+                    "x": 483.3953576456905,
+                    "y": 248.1462140992167
+                },
+                {
+                    "x": 483.3953576456905,
+                    "y": 286.99738903394257
+                },
+                {
+                    "x": 329.71596474045054,
+                    "y": 286.99738903394257
+                }
+            ]
+        }
+    ],
+    "version": "2.2.0"
+}
