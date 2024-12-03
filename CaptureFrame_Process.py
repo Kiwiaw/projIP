@@ -8,6 +8,8 @@ import matplotlib.pyplot as plt
 
 
 
+
+
 def CaptureFrame_Process(file_path, sample_frequency, save_path):
     """
     In this file, you will define your own CaptureFrame_Process funtion. In this function,
@@ -41,25 +43,43 @@ def CaptureFrame_Process(file_path, sample_frequency, save_path):
             print('photo Number: ' + name)
 
             frameName += interval
-            frames.append(frame)
+            frames.append((frameName,frame))
         else:
             flag = False
 
 
     cam.release()
-    cv2.destroyAllWindows()
+    # cv2.waitKey(0)
+    # cv2.destroyAllWindows()
     print(frames)
 
     # TODO: Implement actual algorithms for Localizing Plates
     count=0
-    for frame in frames:
-        Localization.plate_detection(frame)
+    listaResults = []
+    for frameName, frame in frames:
+        result = Localization.plate_detection(frame)
+        if result[0] is None:
+            continue
+        image, x,y,w,h=Localization.plate_detection(frame)
+        if image is None or image.size == 0:
+            continue
+        listaResults.append(Result(frameName,x,y,w,h, frameName/framesPerSecond))
+        # cv2.imshow("Image After Crop", image)
+        # cv2.waitKey(0)
+        # cv2.destroyAllWindows()
+        plt.imshow(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
+        plt.axis('off')
+        plt.show()
+        print(f' Time Stamp (in seconds):{listaResults[count].timeFrame}, x:{listaResults[count].x}, '
+              f'y:{listaResults[count].y}, w:{listaResults[count].w}, h:{listaResults[count].h} '
+              f'and last but not least frame: {listaResults[count].frameNumber}')
 
         # frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         # plt.imshow(frame)
         # plt.show()
 
         # print(type(frame), frame.shape)
+
 
         count+=1
         if (count==10):
@@ -76,3 +96,30 @@ def CaptureFrame_Process(file_path, sample_frequency, save_path):
     # TODO: REMOVE THESE (above) and write the actual values in `output`
 
     pass
+
+class Result():
+    def __init__(self, frameNumber, x, y,w,h, timeFrame):
+        self.frameNumber = frameNumber
+        self.x =x
+        self.y =y
+        self.w = w
+        self.h = h
+        self.timeFrame = timeFrame
+
+    def getFrameNumber(self):
+        return self.frameNumber
+
+    def getX(self):
+        return self.x
+
+    def getY(self):
+        return self.y
+
+    def getWidth(self):
+        return self.w
+
+    def getHeight(self):
+        return self.h
+
+    def getTimeFrame(self):
+        return self.timeFrame
