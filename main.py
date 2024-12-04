@@ -10,7 +10,7 @@ import pandas as pd
 # define the required arguments: video path(file_path), sample frequency(second), saving path for final result table
 # for more information of 'argparse' module, see https://docs.python.org/3/library/argparse.html
 import Localization
-
+import json
 
 def get_args():
     parser = argparse.ArgumentParser()
@@ -74,7 +74,7 @@ def fetchStartEndGTFrameValues(file_path, startFrame, endFrame):
 
     # adding to frames all the frames between startFrame and endFrame
     #We can change so the accuracy is better !!! (these 12 to 1)
-    for currentFrame in range(startFrame, endFrame + 1, 12):
+    for currentFrame in range(startFrame, endFrame + 1, 1):
         cam.set(cv2.CAP_PROP_POS_FRAMES, currentFrame)
         ret, frame = cam.read()
         if ret:
@@ -123,10 +123,10 @@ def getHighestAccuracyForEachOneGT(x1, y1, w1, h1, startFrame, endFrame, file_pa
 
 # TEST
 # timeframe from the video  - 24 (gives a good result)
-# TODO: we have to fix it ^^ >_<
-accuracyCheck = getHighestAccuracyForEachOneGT(307, 290, 225, 53, 90*12, 95*12, 'dataset/trainingvideo.avi')
-print(accuracyCheck)
-
+# # TODO: we have to fix it ^^ >_<
+# accuracyCheck = getHighestAccuracyForEachOneGT(307, 290, 225, 53, 90*12, 95*12, 'dataset/trainingvideo.avi')
+# print(accuracyCheck)
+#
 
 
 
@@ -137,13 +137,13 @@ def divideIntoSets():
     Cat3 = []
     Cat4 = []
 
-    basePath = r"dataset/TrainingSet"
+    basePath = r"dataset/GT Train"
 
     categories = {
-        "Categorie I": Cat1,
-        "Categorie II": Cat2,
-        "Categorie III": Cat3,
-        "Categorie IV": Cat4,
+        "CAT 1": Cat1,
+        "CAT 2": Cat2,
+        "CAT 3": Cat3,
+        "CAT 4": Cat4,
     }
 
     for category, file_list in categories.items():
@@ -169,3 +169,43 @@ def divideIntoSets():
     return Cat1Train, Cat1Test, Cat2Train, Cat2Test,Cat3Train, Cat3Test,Cat4Train, Cat4Test
 
 Cat1Train, Cat1Test, Cat2Train, Cat2Test,Cat3Train, Cat3Test,Cat4Train, Cat4Test=divideIntoSets()
+
+#chg
+def processJsonGetAccuracy(filePath):
+
+
+    with open(os.path.join(basePath, filePath), 'r') as f:
+        data = json.load(f)
+    accuracy =-1
+
+
+    if 'asset' in data and 'regions' in data:
+        timestamp = data["asset"].get("timestamp", 0)
+
+        for region in data["regions"]:
+            if 'boundingBox' in region:
+                bounding_box = region["boundingBox"]
+                left = bounding_box["left"]
+                top = bounding_box["top"]
+                width = bounding_box["width"]
+                height = bounding_box["height"]
+                #can be changed later
+                start = timestamp - 3
+                end= timestamp + 3
+                start*=12
+                end*=12
+
+                #path can be chnaged later
+                accuracy = getHighestAccuracyForEachOneGT(int(left), int(top), int(width), int(height), start , end, 'dataset/trainingvideo.avi')
+    return accuracy
+
+# Accuracy for Cat1 Train
+def AccuracyForFullSet(Category):
+    sumAccuracy=-1
+    for frame in Category:
+        sumAccuracy+=processJsonGetAccuracy(frame)
+
+    return sumAccuracy/len(Category)
+basePath = "dataset/GT Train/CAT 3"
+print(f'Average accuarcy: {AccuracyForFullSet(Cat3Train)}')
+
