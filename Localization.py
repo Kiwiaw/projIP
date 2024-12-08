@@ -34,6 +34,7 @@ def plate_detection(image):
     # cv2.imshow("Image After Crop", image)
     # cv2.waitKey(0)
     # cv2.destroyAllWindows()
+
     return yellowMask(image)
 
 
@@ -80,68 +81,38 @@ def applyMask(image, lower, upper):
 
     image = cv2.bitwise_and(image,image, mask=mask)
 
-    return cropPlate(image, mask)
+    return cropPlate(image, mask,0.6,1.1,.5)
 
-def cropPlate(image, mask):
-    # plates = []
+
+def cropPlate(image, mask, k1, k2, ratioFix):
     contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    # cv2.imshow("Image After Crop", mask)
-    # cv2.waitKey(0)
-    # cv2.destroyAllWindows()
-    MIN_AREA = 1500
-    x, y, w, h = 0,0,0,0
-    for contour in contours:
 
-        rectangle = cv2.contourArea(contour)
-        if rectangle < MIN_AREA:
+    plateAfterCrop = None
+    x, y, w, h = 0, 0, 0, 0
+
+    MIN_AREA = k1 * 2400
+    MAX_AREA = k2 * 90000
+
+    for contour in contours:
+        area = cv2.contourArea(contour)
+
+        if area < MIN_AREA or area > MAX_AREA:
             continue
 
         x, y, w, h = cv2.boundingRect(contour)
-        counter = 30;
 
-        flag = True
-        while flag and counter>0:
-            roi = mask[y:y + h, x:x + w]
-            # Testing purposes
-            # cv2.imshow("Image After Crop", roi)
-            # cv2.waitKey(0)
-            # cv2.destroyAllWindows()
+        roi = mask[y:y + h, x:x + w]
 
+        nonZeroPixelsInTheRectangle = cv2.countNonZero(roi)
+        allPixelsInTheRectangle = w * h
 
+        ratio = 0 if allPixelsInTheRectangle == 0 else nonZeroPixelsInTheRectangle / allPixelsInTheRectangle
 
-            nonZeroPixelsInTheRectangle = cv2.countNonZero(roi)
-            allPixelsInTheRectangle = w * h
-            ratio = 0 if allPixelsInTheRectangle == 0 else nonZeroPixelsInTheRectangle / allPixelsInTheRectangle
+        if ratio >= ratioFix:
+            plateAfterCrop = image[y:y + h, x:x + w]
+            break
+    return plateAfterCrop, x, y, w, h
 
-
-
-            if ratio >= 0.5 :
-
-
-                flag = False  # Valid ratio, below .5 weirdly situated plates are not included
-
-            else:
-                counter=counter-1;
-                x += 1
-                y += 1
-                w -= 2
-                h -= 2
-
-            if w < 20 or h < 10:
-                flag = False
-                continue
-    plateAfterCrop = image[y:y + h, x:x + w]
-
-
-
-
-    # plateAfterCrop = cv2.cvtColor(plateAfterCrop, cv2.COLOR_BGR2RGB)
-
-    # cv2.imshow("Image After Crop", plateAfterCrop)
-    # cv2.waitKey(0)
-    # cv2.destroyAllWindows()
-
-    return plateAfterCrop, x,y,w,h
 
 
 

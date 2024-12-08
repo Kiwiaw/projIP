@@ -74,7 +74,7 @@ def fetchStartEndGTFrameValues(file_path, startFrame, endFrame):
 
     # adding to frames all the frames between startFrame and endFrame
     #We can change so the accuracy is better !!! (these 12 to 1)
-    for currentFrame in range(startFrame, endFrame + 1, 1):
+    for currentFrame in range(startFrame, endFrame + 1, 12):
         cam.set(cv2.CAP_PROP_POS_FRAMES, currentFrame)
         ret, frame = cam.read()
         if ret:
@@ -176,7 +176,7 @@ def processJsonGetAccuracy(filePath):
 
     with open(os.path.join(basePath, filePath), 'r') as f:
         data = json.load(f)
-    accuracy =-1
+    accuracy =0
 
 
     if 'asset' in data and 'regions' in data:
@@ -206,6 +206,6 @@ def AccuracyForFullSet(Category):
         sumAccuracy+=processJsonGetAccuracy(frame)
 
     return sumAccuracy/len(Category)
-basePath = "dataset/GT Train/CAT 3"
-print(f'Average accuarcy: {AccuracyForFullSet(Cat3Train)}')
+basePath = "dataset/GT Train/CAT 2"
+print(f'Average accuarcy: {AccuracyForFullSet(Cat2Train)}')
 
