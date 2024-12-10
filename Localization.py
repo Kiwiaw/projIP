@@ -97,6 +97,7 @@ def cropPlate(image, mask, k1, k2, ratioFix):
         area = cv2.contourArea(contour)
 
         if area < MIN_AREA or area > MAX_AREA:
+
             continue
 
         x, y, w, h = cv2.boundingRect(contour)
@@ -110,7 +111,14 @@ def cropPlate(image, mask, k1, k2, ratioFix):
 
         if ratio >= ratioFix:
             plateAfterCrop = image[y:y + h, x:x + w]
+            # plt.imshow(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
+            # plt.axis('off')
+            # plt.show()
+            # plt.imshow(cv2.cvtColor(plateAfterCrop, cv2.COLOR_BGR2RGB))
+            # plt.axis('off')
+            # plt.show()
             break
+
     return plateAfterCrop, x, y, w, h
 
 

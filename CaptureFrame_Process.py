@@ -67,9 +67,9 @@ def CaptureFrame_Process(file_path, sample_frequency, save_path):
         # cv2.imshow("Image After Crop", image)
         # cv2.waitKey(0)
         # cv2.destroyAllWindows()
-        plt.imshow(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
-        plt.axis('off')
-        plt.show()
+        # plt.imshow(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
+        # plt.axis('off')
+        # plt.show()
         print(f' Time Stamp (in seconds):{listaResults[count].timeFrame}, x:{listaResults[count].x}, '
               f'y:{listaResults[count].y}, w:{listaResults[count].w}, h:{listaResults[count].h} '
               f'and last but not least frame: {listaResults[count].frameNumber}')
