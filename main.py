@@ -49,6 +49,14 @@ def checkAccuracyIOU(x1, y1, w1, h1, x2, y2, w2, h2):
 
     # intersection/union
     # x,y,w,h predictions and GT
+    wTolerance = int(0.1 * w1)
+    hTolerance = int(0.05 * h1)
+
+    if (x2 >= x1 - wTolerance and
+            y2 >= y1 - hTolerance and
+            x2 + w2 <= x1 + w1 + wTolerance and
+            y2 + h2 <= y1 + h1 + hTolerance):
+        return 1.0
 
     coordiatesImage1 = [(i, j) for j in range(y1, y1 + h1) for i in range(x1, x1 + w1)]
     coordiatesImage1 = set(coordiatesImage1)
@@ -72,14 +80,13 @@ def checkAccuracyIOU(x1, y1, w1, h1, x2, y2, w2, h2):
 def fetchStartEndGTFrameValues(file_path, startFrame, endFrame,x1, y1, w1, h1):
     frames = []
     cam = cv2.VideoCapture(file_path)
-    # startFrame-=24;
-    # endFrame-=24;
+
 
     framesPerSecond = cam.get(cv2.CAP_PROP_FPS)
 
     # adding to frames all the frames between startFrame and endFrame
     #We can change so the accuracy is better !!! (these 12 to 1)
-    for currentFrame in range(startFrame, endFrame + 1, 12):
+    for currentFrame in range(startFrame, endFrame + 1, 2):
         cam.set(cv2.CAP_PROP_POS_FRAMES, currentFrame)
         ret, frame = cam.read()
         if ret:
@@ -101,36 +108,40 @@ def fetchStartEndGTFrameValues(file_path, startFrame, endFrame,x1, y1, w1, h1):
 
     for frameIndex, (frameName, frame) in enumerate(frames):
         # check, from ground truth
-        # cv2.rectangle(frame, (x1, y1), (x1 + w1, y1 + h1), (0, 0, 255), 2)
-        # plt.imshow(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+        unmodified_frame = frame.copy()
+        # cv2.rectangle(unmodified_frame, (x1, y1), (x1 + w1, y1 + h1), (0, 0, 255), 2)
+        # plt.imshow(cv2.cvtColor(unmodified_frame, cv2.COLOR_BGR2RGB))
         # plt.title('Red')
         # plt.axis('off')
         # plt.show()
         result = Localization.plate_detection(frame)
-        if result[0] is None:
-            continue
-        image, x, y, w, h = result
-        #looking for bugs - visualization green rectagle
-        # cv2.rectangle(image, (x, y), (x + w, y + h), (0, 255, 0), 2)
-        # plt.imshow(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
-        # plt.title('Green')
-        # plt.axis('off')
-        # plt.show()
+        for r in result:
+
+            if r.croppedImage is None:
+                continue
+            image, x, y, w, h = r.croppedImage,r.x,r.y,r.w,r.h
+            #looking for bugs - visualization green rectagle
+            # cv2.rectangle(unmodified_frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+            # plt.imshow(cv2.cvtColor(unmodified_frame, cv2.COLOR_BGR2RGB))
+            # plt.title('Green')
+            # plt.axis('off')
+            # plt.show()
 
 
-        if image is None or image.size == 0:
-            continue
-        resultHere = CaptureFrame_Process.Result(frameName, x, y, w, h, frameName / framesPerSecond)
-        listaResults.append(resultHere)
-        debugDisctionary[resultHere] =frame
+            if image is None or image.size == 0:
+                continue
+            resultHere = CaptureFrame_Process.Result(frameName, x, y, w, h, frameName / framesPerSecond)
+            listaResults.append(resultHere)
+            debugDisctionary[resultHere] =frame
     # return list with Result
     return listaResults,debugDisctionary
 
 
 def getHighestAccuracyForEachOneGT(x1, y1, w1, h1, startFrame, endFrame, file_path):
+    print("Entering getHighestAccuracyForEachOneGT")
 
-
-
+    listaResults, debugDisctionary = fetchStartEndGTFrameValues(file_path, startFrame, endFrame, x1, y1, w1, h1)
+    print(f"Length of listaResults: {len(listaResults)}")
 
     listaResults,debugDisctionary = fetchStartEndGTFrameValues(file_path, startFrame, endFrame,x1, y1, w1, h1)
     biggestAccuracy = 0
@@ -145,20 +156,8 @@ def getHighestAccuracyForEachOneGT(x1, y1, w1, h1, startFrame, endFrame, file_pa
             biggestAccuracy = currentAccuracy
             lastResult =R
 
-    image = debugDisctionary[R]
-    # check, from ground truth
-    # cv2.rectangle(image, (R.x, R.y), (R.x + R.w, R.y + R.h), (0, 0, 255), 2)
-    # plt.imshow(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
-    # plt.title('Red')
-    # plt.axis('off')
-    # plt.show()
-    #
-    # cv2.rectangle(image, (x1, y1), (x1 + w1, y1 + h1), (0, 255, 0), 2)
-    # plt.imshow(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
-    # plt.title('Green - it should be like this')
-    # plt.axis('off')
-    # plt.show()
 
+    print(f'Higest accuracy is: {biggestAccuracy}')
     return biggestAccuracy
 
 
@@ -190,7 +189,6 @@ def divideIntoSets():
         category_path = os.path.join(basePath, category)
         all_entries = os.listdir(category_path)
         for file_name in all_entries:
-            file_path = os.path.join(category_path, file_name)
             file_list.append(file_name)
 
     splitFactor = 0.7
@@ -241,11 +239,11 @@ def processJsonGetAccuracy(filePath):
 
 # Accuracy for Cat1 Train
 def AccuracyForFullSet(Category):
-    sumAccuracy=-1
+    sumAccuracy=0
     for frame in Category:
         sumAccuracy+=processJsonGetAccuracy(frame)
 
     return sumAccuracy/len(Category)
 basePath = "dataset/GT Train/CAT 2"
-# print(f'Average accuarcy: {AccuracyForFullSet(Cat2Train)}')
+print(f'Average accuarcy: {AccuracyForFullSet(Cat2Train)}')
 #

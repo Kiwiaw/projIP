@@ -93,6 +93,9 @@ def cropPlate(image, mask, k1, k2, ratioFix):
     MIN_AREA = k1 * 2400
     MAX_AREA = k2 * 90000
 
+    listaOfContours = []
+
+
     for contour in contours:
         area = cv2.contourArea(contour)
 
@@ -109,17 +112,14 @@ def cropPlate(image, mask, k1, k2, ratioFix):
 
         ratio = 0 if allPixelsInTheRectangle == 0 else nonZeroPixelsInTheRectangle / allPixelsInTheRectangle
 
-        if ratio >= ratioFix:
-            plateAfterCrop = image[y:y + h, x:x + w]
-            # plt.imshow(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
-            # plt.axis('off')
-            # plt.show()
-            # plt.imshow(cv2.cvtColor(plateAfterCrop, cv2.COLOR_BGR2RGB))
-            # plt.axis('off')
-            # plt.show()
+        if ratio <= ratioFix:
             break
+        plateAfterCrop = image[y:y + h, x:x + w]
 
-    return plateAfterCrop, x, y, w, h
+        newContour = contourObject(plateAfterCrop,x,y,w,h)
+        listaOfContours.append(newContour)
+
+    return listaOfContours
 
 
 
@@ -134,3 +134,29 @@ def cropPlate(image, mask, k1, k2, ratioFix):
 #                     plates.append(plate)
 #
 #     return plates
+
+
+class contourObject():
+    def __init__(self, croppedImage, x, y,w,h):
+        self.croppedImage = croppedImage
+        self.x =x
+        self.y =y
+        self.w = w
+        self.h = h
+
+
+    def getCroppedImage(self):
+        return self.croppedImage
+
+    def getX(self):
+        return self.x
+
+    def getY(self):
+        return self.y
+
+    def getWidth(self):
+        return self.w
+
+    def getHeight(self):
+        return self.h
+
