@@ -120,12 +120,20 @@ def fetchStartEndGTFrameValues(file_path, startFrame, endFrame,x1, y1, w1, h1):
             if r.croppedImage is None:
                 continue
             image, x, y, w, h = r.croppedImage,r.x,r.y,r.w,r.h
+
+
             #looking for bugs - visualization green rectagle
             # cv2.rectangle(unmodified_frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
             # plt.imshow(cv2.cvtColor(unmodified_frame, cv2.COLOR_BGR2RGB))
             # plt.title('Green')
             # plt.axis('off')
             # plt.show()
+            #
+            cv2.rectangle(image, (x, y), (x + w, y + h), (0, 255, 0), 2)
+            plt.imshow(cv2.cvtColor(image, cv2.COLOR_HSV2RGB))
+            plt.title('Green')
+            plt.axis('off')
+            plt.show()
 
 
             if image is None or image.size == 0:
@@ -155,7 +163,16 @@ def getHighestAccuracyForEachOneGT(x1, y1, w1, h1, startFrame, endFrame, file_pa
         if (currentAccuracy > biggestAccuracy):
             biggestAccuracy = currentAccuracy
             lastResult =R
+    # image =debugDisctionary[lastResult]
+    #best detected squares for all
+    # x,y,w,h = lastResult.x,lastResult.y,lastResult.w, lastResult.h
+    # cv2.rectangle(image, (x, y), (x + w, y + h), (0, 255, 0), 2)
+    # plt.imshow(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
+    # plt.title('Detected best square over plate')
+    # plt.axis('off')
+    # plt.show()
 
+    #Here can be called image recognition function for characters
 
     print(f'Higest accuracy is: {biggestAccuracy}')
     return biggestAccuracy
