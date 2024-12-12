@@ -22,7 +22,10 @@ def segment_and_recognize(plate_images):
 		You may need to define other functions.
 	"""
 	#1
-	processEachDL(plate_images,0.1)
+	#k1 parameter is percentage of max size of a letter/digit from the image/k2 for the smallest
+	#ratioStandard - percentage of the image that is a letter/digit
+	ratioStandard = 0.3
+	processEachDL(plate_images,0.1,0.2,0.01,ratioStandard)
 
 	#visualization
 	# plt.imshow(cv2.cvtColor(imageInverted,cv2.COLOR_GRAY2RGB))
@@ -35,8 +38,11 @@ def segment_and_recognize(plate_images):
 
 
 
-def processEachDL(image, epsilon):
+def processEachDL(image, epsilon,k1,k2,ratioStandard):
 	#1
+
+	#TODO: max digit size, min digit size have to be set, minimum ration
+	#TODO: so 3 things
 
 	#We convert RGB->Gray
 	imgGray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
@@ -50,16 +56,44 @@ def processEachDL(image, epsilon):
 	plt.axis('off')
 	plt.show()
 
+	# Calculate an area of the image so then we can use that to discard not valid contours
+	height, width = image.shape[:2]
+	MAX_AREA = height*width
+
 	#Now if we have find countours for each digit
 	contours,_ = cv2.findContours(imageInverted,cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 	for contour in contours:
+		area = cv2.contourArea(contour)
+		#if this contour is too big we discard it
+		if(MAX_AREA*k1<area or MAX_AREA*k2>area):
+			continue
+
+
 		x, y, w, h = cv2.boundingRect(contour)
-		imageCropped = image[y:y + h, x:x + w]
+
+
+		#ratio
+		roi = imageInverted[y:y + h, x:x + w]
+
+		nonZeroPixelsInTheRectangle = cv2.countNonZero(roi)
+		allPixelsInTheRectangle = w * h
+		ratio = nonZeroPixelsInTheRectangle/allPixelsInTheRectangle
+
+		if(ratio<ratioStandard):
+			continue
+
+
+
+		imageCropped = imageInverted[y:y + h, x:x + w]
+
 		# visualization
 		plt.imshow(cv2.cvtColor(imageCropped, cv2.COLOR_GRAY2RGB))
+
 		plt.title('Green')
 		plt.axis('off')
 		plt.show()
+
+
 
 
 def isodata_thresholding(image, epsilon = 2):
