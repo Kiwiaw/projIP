@@ -35,8 +35,8 @@ def segment_and_recognize(plate_images):
     # for c in listOfChars:
     for i in listOfChars:
         charFound, distance = bestDistance(i)
-        plotImage(i,"original char")
-        plotImage(charFound, "charfound")
+        plotImage(i,f'recognized as: {charFound}')
+
 
 
     # recognized_plates = [None, None, None]
@@ -52,35 +52,80 @@ def plotImage(img, title, cmapType=None):
     plt.show()
 
 
-def bestDistance(charPhoto):
-    hist, _ = np.histogram(charPhoto, bins=256)
-    histToCompare= hist / np.sum(hist)
+def bestDistance(charPhoto, compareSize=(128, 128)):
+    if len(charPhoto.shape) == 3:
+        charPhoto = cv2.cvtColor(charPhoto, cv2.COLOR_BGR2GRAY)
+
+    charPhotoResized = cv2.resize(charPhoto,compareSize)
+    charTruth = charPhotoResized.flatten()/ 255.
 
     topDistance = float('inf')
     topLetterDigit = None
 
     pathLetters = "dataset/SameSizeLetters"
     pathDigits = "dataset/SameSizeNumbers"
+    label = None
 
     for i in range(1,28):
+
         fullPath = None
         if(i<18):
 
             fullPath = os.path.join(pathLetters,f'{i}.bmp')
+            label = assignLetter(i)
+
+
 
         if(i>=18):
             temp = i-18
             fullPath = os.path.join(pathDigits,f'{temp}.bmp')
+            label = str(temp)
+
+
 
         img = cv2.imread(fullPath)
-        hist, _ = np.histogram(img, bins=256)
-        hist = hist / np.sum(hist)
-        value = euclideanDistance(hist, histToCompare)
+        if len(img.shape) == 3:
+            img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        #  detect a contour so there is no background stupid match
+        contours,_ = cv2.findContours(img,cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        roi = None
+        for contour in contours:
+            x, y, w, h = cv2.boundingRect(contour)
+            roi = img[y:y + h, x:x + w]
+
+        imgProposition = cv2.resize(roi, compareSize)
+        imgProposition = imgProposition.flatten()/255.
+
+        value = euclideanDistance(imgProposition,charTruth)
+
         if (value < topDistance):
-            topLetterDigit = img
+            topLetterDigit = label
             topDistance = value
 
     return topLetterDigit,topDistance
+
+
+def assignLetter(value):
+    cases = {
+        1: "B",
+        2: "D",
+        3: "F",
+        4: "G",
+        5: "H",
+        6: "J",
+        7: "K",
+        8: "L",
+        9: "M",
+        10: "N",
+        11: "P",
+        12: "R",
+        13: "S",
+        14: "T",
+        15: "V",
+        16: "X",
+        17: "Z"
+    }
+    return cases.get(value)
 
 
 
