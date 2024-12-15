@@ -55,6 +55,7 @@ def plotImage(img, title, cmapType=None):
     plt.show()
 
 
+
 def bestDistance(charPhoto, compareSize=(64, 64)):
     if len(charPhoto.shape) == 3:
         charPhoto = cv2.cvtColor(charPhoto, cv2.COLOR_BGR2GRAY)
@@ -65,26 +66,11 @@ def bestDistance(charPhoto, compareSize=(64, 64)):
     topDistance = float('inf')
     topLetterDigit = None
 
-    pathLetters = "dataset/SameSizeLetters"
-    pathDigits = "dataset/SameSizeNumbers"
-    label = None
+
 
     for i in range(1,28):
 
-        fullPath = None
-        if(i<18):
-
-            fullPath = os.path.join(pathLetters,f'{i}.bmp')
-            label = assignLetter(i)
-
-
-
-        if(i>=18):
-            temp = i-18
-            fullPath = os.path.join(pathDigits,f'{temp}.bmp')
-            label = str(temp)
-
-
+        fullPath, label = getPhotoPath(i);
 
         img = cv2.imread(fullPath)
         if len(img.shape) == 3:
@@ -107,6 +93,20 @@ def bestDistance(charPhoto, compareSize=(64, 64)):
 
     return topLetterDigit,topDistance
 
+def getPhotoPath(i):
+    pathLetters = "dataset/SameSizeLetters"
+    pathDigits = "dataset/SameSizeNumbers"
+    fullPath = None
+    label = None
+    if (i < 18):
+        fullPath = os.path.join(pathLetters, f'{i}.bmp')
+        label = assignLetter(i)
+
+    if (i >= 18):
+        temp = i - 18
+        fullPath = os.path.join(pathDigits, f'{temp}.bmp')
+        label = str(temp)
+    return fullPath,label
 
 def assignLetter(value):
     cases = {
