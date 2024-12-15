@@ -33,9 +33,12 @@ def segment_and_recognize(plate_images):
     # using switch we add a letter
     #return a string
     # for c in listOfChars:
+    plateString = ''
     for i in listOfChars:
         charFound, distance = bestDistance(i)
         plotImage(i,f'recognized as: {charFound}')
+        plateString+=str(charFound)
+    print(plateString)
 
 
 
@@ -52,7 +55,7 @@ def plotImage(img, title, cmapType=None):
     plt.show()
 
 
-def bestDistance(charPhoto, compareSize=(128, 128)):
+def bestDistance(charPhoto, compareSize=(64, 64)):
     if len(charPhoto.shape) == 3:
         charPhoto = cv2.cvtColor(charPhoto, cv2.COLOR_BGR2GRAY)
 
