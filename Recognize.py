@@ -3,6 +3,7 @@ import numpy as np
 import os
 
 from matplotlib import pyplot as plt
+from sklearn.svm import SVC
 
 
 def segment_and_recognize(plate_images):
@@ -35,15 +36,59 @@ def segment_and_recognize(plate_images):
     # for c in listOfChars:
     plateString = ''
     for i in listOfChars:
-        charFound, distance = bestDistance(i)
+        # charFound, distance = bestDistance(i)
+        charFound = predictModel(svmModel(),i)
         plotImage(i,f'recognized as: {charFound}')
         plateString+=str(charFound)
     print(plateString)
 
 
-
     # recognized_plates = [None, None, None]
     # return recognized_plates
+
+def predictModel(myModel,imageToClassify,compareSize=(64,64)):
+    img = imageToClassify
+    if len(img.shape) == 3:
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    imgProposition = cv2.resize(img, compareSize)
+    imageToClassify = imgProposition.flatten() / 255.
+
+    imageToClassify = imageToClassify.reshape(1, -1)
+
+    y_predict = myModel.predict(imageToClassify)
+    return y_predict[0]
+
+
+def svmModel(compareSize=(64,64)):
+    #we have to generate a dataset
+    x_train,y_train = [],[]
+    for i in range(1, 28):
+
+        xCurrent,yCurrent  = getPhotoPath(i)
+
+        img = cv2.imread(xCurrent)
+        if len(img.shape) == 3:
+            img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        #  detect a contour so there is no background stupid match
+        contours, _ = cv2.findContours(img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        roi = None
+        for contour in contours:
+            x, y, w, h = cv2.boundingRect(contour)
+            roi = img[y:y + h, x:x + w]
+
+        imgProposition = cv2.resize(roi, compareSize)
+        imgProposition = imgProposition.flatten() / 255.
+
+
+        x_train.append(imgProposition)
+        y_train.append(yCurrent)
+
+    #we have to train SVM model
+    svm = SVC(kernel='linear', C=1.0, decision_function_shape='ovr')
+    svm.fit(x_train, y_train)
+
+    return svm
+
 
 def plotImage(img, title, cmapType=None):
 
