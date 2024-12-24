@@ -35,13 +35,7 @@ if __name__ == '__main__':
 #
 
 
-def groundTruthRead():
-    pathGT = "dataset/groundTruth.csv"
-    GT = pd.read_csv(pathGT)
-    print(GT.head())
 
-
-# groundTruthRead()
 
 # we just run it for every frame between the start and end of the GT frames
 # and then take the higehest accuracy
@@ -129,11 +123,11 @@ def fetchStartEndGTFrameValues(file_path, startFrame, endFrame,x1, y1, w1, h1):
             # plt.axis('off')
             # plt.show()
             #
-            cv2.rectangle(image, (x, y), (x + w, y + h), (0, 255, 0), 2)
-            plt.imshow(cv2.cvtColor(image, cv2.COLOR_HSV2RGB))
-            plt.title('Green')
-            plt.axis('off')
-            plt.show()
+            # cv2.rectangle(image, (x, y), (x + w, y + h), (0, 255, 0), 2)
+            # plt.imshow(cv2.cvtColor(image, cv2.COLOR_HSV2RGB))
+            # plt.title('Green')
+            # plt.axis('off')
+            # plt.show()
 
 
             if image is None or image.size == 0:
@@ -153,7 +147,7 @@ def getHighestAccuracyForEachOneGT(x1, y1, w1, h1, startFrame, endFrame, file_pa
 
     listaResults,debugDisctionary = fetchStartEndGTFrameValues(file_path, startFrame, endFrame,x1, y1, w1, h1)
     biggestAccuracy = 0
-    lastResult = 0
+    lastResult = None
     for R in listaResults:
         print(f'x:{R.x}, y:{R.y}, w:{R.w} and h: {R.h} ')
         print(f'GR: x:{x1}, y:{y1}, w:{w1} and h: {h1} ')
@@ -163,7 +157,7 @@ def getHighestAccuracyForEachOneGT(x1, y1, w1, h1, startFrame, endFrame, file_pa
         if (currentAccuracy > biggestAccuracy):
             biggestAccuracy = currentAccuracy
             lastResult =R
-    # image =debugDisctionary[lastResult]
+    image =debugDisctionary[lastResult]
     #best detected squares for all
     # x,y,w,h = lastResult.x,lastResult.y,lastResult.w, lastResult.h
     # cv2.rectangle(image, (x, y), (x + w, y + h), (0, 255, 0), 2)
@@ -175,7 +169,7 @@ def getHighestAccuracyForEachOneGT(x1, y1, w1, h1, startFrame, endFrame, file_pa
     #Here can be called image recognition function for characters
 
     print(f'Higest accuracy is: {biggestAccuracy}')
-    return biggestAccuracy
+    return biggestAccuracy, image,lastResult
 
 
 # TEST
@@ -232,8 +226,8 @@ def processJsonGetAccuracy(filePath):
     with open(os.path.join(basePath, filePath), 'r') as f:
         data = json.load(f)
     accuracy =0
-
-
+    image = None
+    lastResult = None
     if 'asset' in data and 'regions' in data:
         timestamp = data["asset"].get("timestamp", 0)
 
@@ -251,16 +245,40 @@ def processJsonGetAccuracy(filePath):
                 end*=12
 
                 #path can be chnaged later
-                accuracy = getHighestAccuracyForEachOneGT(int(left), int(top), int(width), int(height), start , end, 'dataset/trainingvideo.avi')
-    return accuracy
+                accuracy, image,lastResult = getHighestAccuracyForEachOneGT(int(left), int(top), int(width), int(height), start , end, 'dataset/trainingvideo.avi')
+    return accuracy,image,lastResult
 
 # Accuracy for Cat1 Train
 def AccuracyForFullSet(Category):
     sumAccuracy=0
+
     for frame in Category:
-        sumAccuracy+=processJsonGetAccuracy(frame)
+        accuracy, image,lastResult = processJsonGetAccuracy(frame)
+        sumAccuracy+= accuracy
+
+        x,y,w,h = lastResult.x,lastResult.y,lastResult.w, lastResult.h
+        showRectangleOnImage(image,x,y,w,h)
+        showPlate(image,x,y,w,h)
+
 
     return sumAccuracy/len(Category)
+
+def showRectangleOnImage(image, x,y,w,h):
+    cv2.rectangle(image, (x, y), (x + w, y + h), (0, 255, 0), 2)
+    plt.imshow(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
+    plt.title('Detected best square over plate')
+    plt.axis('off')
+    plt.show()
+
+
+def showPlate(image,x,y,w,h):
+    result = image[y:y + h, x:x + w]
+    plt.imshow(cv2.cvtColor(result, cv2.COLOR_BGR2RGB))
+    plt.title('detected plate')
+    plt.axis('off')
+    plt.show()
+
 basePath = "dataset/GT Train/CAT 2"
 print(f'Average accuarcy: {AccuracyForFullSet(Cat2Train)}')
+
 #

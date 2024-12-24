@@ -4,7 +4,9 @@ import os
 
 from matplotlib import pyplot as plt
 from sklearn.svm import SVC
-
+# import tensorflow as tf
+# from tensorflow.keras import layers
+# from tensorflow.keras.models import Sequential
 
 def segment_and_recognize(plate_images):
     """
@@ -45,6 +47,14 @@ def segment_and_recognize(plate_images):
 
     # recognized_plates = [None, None, None]
     # return recognized_plates
+
+#TODO: yse image aumentation if still necessary after fine tuning
+
+# def imageAugmentation(originalImage, imageNumber,directory,  numberOfAugumentations = 10):
+#     #TODO: save the image to the directory as its file number + 20
+#     image = originalImage.reshape((1, *originalImage.shape, 1))
+#     pass
+
 
 def predictModel(myModel,imageToClassify,compareSize=(64,64)):
     img = imageToClassify
@@ -273,9 +283,9 @@ def isodata_thresholding(image, epsilon = 2):
     return image
 
 
-plate_image_path = "recognitionTestPlate.png"
-plate_image = cv2.imread(plate_image_path)
-if plate_image is None:
-    print(f"Error: Could not load image from path {plate_image_path}")
-else:
-    segment_and_recognize(plate_image)
+# plate_image_path = "recognitionTestPlate.png"
+# plate_image = cv2.imread(plate_image_path)
+# if plate_image is None:
+#     print(f"Error: Could not load image from path {plate_image_path}")
+# else:
+#     segment_and_recognize(plate_image)
