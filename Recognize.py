@@ -1,12 +1,16 @@
 import cv2
 import numpy as np
 import os
+import pandas as pd
+import json
 
 from matplotlib import pyplot as plt
 from sklearn.svm import SVC
 # import tensorflow as tf
 # from tensorflow.keras import layers
 # from tensorflow.keras.models import Sequential
+import main
+
 
 def segment_and_recognize(plate_images):
     """
@@ -67,6 +71,16 @@ def predictModel(myModel,imageToClassify,compareSize=(64,64)):
 
     y_predict = myModel.predict(imageToClassify)
     return y_predict[0]
+
+
+def fineTuneTrainSet(Category,epsilon,k1,k2,ratioStandard):
+    # TODO: fine-tune on trainset 1
+    for filePath in Category:
+        accuracy, image,lastResult = main.processJsonGetAccuracy(filePath)
+        x, y, w, h = lastResult.x, lastResult.y, lastResult.w, lastResult.h
+        listaOfDigits = processEachDL(image[y:y + h, x:x + w],epsilon,k1,k2,ratioStandard)
+
+
 
 
 def svmModel(compareSize=(64,64)):

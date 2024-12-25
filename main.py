@@ -13,6 +13,9 @@ import pandas as pd
 import Localization
 import json
 
+import Recognize
+
+
 def get_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--file_path', type=str, default='dataset/trainingvideo.avi')
@@ -277,8 +280,9 @@ def showPlate(image,x,y,w,h):
     plt.title('detected plate')
     plt.axis('off')
     plt.show()
-
-basePath = "dataset/GT Train/CAT 2"
-print(f'Average accuarcy: {AccuracyForFullSet(Cat2Train)}')
-
 #
+
+# print(f'Average accuarcy: {AccuracyForFullSet(Cat2Train)}')
+
+
+basePath = "dataset/GT Train/CAT 1"
