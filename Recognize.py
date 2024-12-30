@@ -1,3 +1,6 @@
+from skimage.feature import hog
+from skimage.io import imread
+
 import cv2
 import numpy as np
 import os
@@ -40,10 +43,14 @@ def segment_and_recognize(plate_images):
     # using switch we add a letter
     #return a string
     # for c in listOfChars:
+    print(main.Cat1Train)
+    svm= fineTuneTrainSet(main.Cat1Train,"dataset/groundTruth_platesFileNames.csv",0.1,0.2,0.01,ratioStandard )
+
     plateString = ''
     for i in listOfChars:
+
         # charFound, distance = bestDistance(i)
-        charFound = predictModel(svmModel(),i)
+        charFound = predictModel(svm,i)
         plotImage(i,f'recognized as: {charFound}')
         plateString+=str(charFound)
     print(plateString)
@@ -59,6 +66,23 @@ def segment_and_recognize(plate_images):
 #     image = originalImage.reshape((1, *originalImage.shape, 1))
 #     pass
 
+#Morphological operations
+def cleaningChar():
+
+
+
+def hogPreprocessing(image):
+    features = hog(
+        image,
+        orientations=12,
+        pixels_per_cell=(8, 8),
+        cells_per_block=(2, 2),
+        block_norm='L2-Hys',
+        feature_vector=True
+    )
+    return features
+
+
 
 def predictModel(myModel,imageToClassify,compareSize=(64,64)):
     img = imageToClassify
@@ -66,6 +90,7 @@ def predictModel(myModel,imageToClassify,compareSize=(64,64)):
         img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     imgProposition = cv2.resize(img, compareSize)
     imageToClassify = imgProposition.flatten() / 255.
+    # imageToClassify = hogPreprocessing(imgProposition)
 
     imageToClassify = imageToClassify.reshape(1, -1)
 
@@ -73,20 +98,57 @@ def predictModel(myModel,imageToClassify,compareSize=(64,64)):
     return y_predict[0]
 
 
-def fineTuneTrainSet(Category,epsilon,k1,k2,ratioStandard):
-    # TODO: fine-tune on trainset 1
+
+def pathToPlate(csvPath):
+    df = pd.read_csv(csvPath)
+    plate = {}
+    for _, row in df.iterrows():
+        file_names = row['file name (plate)'].split(", ")
+        for file_name in file_names:
+            plate[file_name] = row['License plate'].replace("-", "")
+    return plate
+
+
+#TODO: do this if HOG doesnt fix the issue with 0's and O's
+def fineTuneTrainSet( Category,csvFile, epsilon,k1,k2,ratioStandard, compareSize=(64,64)):
+
+    svm,x_train_old,y_train_old = svmModel()
+
+    plateMapper = pathToPlate(csvFile)
+
+    x_train_new, y_train_new =[],[]
+
     for filePath in Category:
         accuracy, image,lastResult = main.processJsonGetAccuracy(filePath)
         x, y, w, h = lastResult.x, lastResult.y, lastResult.w, lastResult.h
-        listaOfDigits = processEachDL(image[y:y + h, x:x + w],epsilon,k1,k2,ratioStandard)
+        listaOfChars = processEachDL(image[y:y + h, x:x + w],epsilon,k1,k2,ratioStandard)
+
+        plate = plateMapper.get(filePath)
 
 
+        for charImage, charLabel in zip(listaOfChars, plate):
+
+            resizedImage = cv2.resize(charImage, compareSize).flatten() / 255.0
+            # resizedImage = cv2.resize(charImage,compareSize)
+            # resizedImage = hogPreprocessing(resizedImage)
+
+            x_train_new.append(resizedImage)
+            y_train_new.append(charLabel)
+
+
+        x_train =x_train_old+x_train_new
+        y_train = y_train_old +y_train_new
+
+        svm.fit(x_train,y_train)
+
+        return svm
 
 
 def svmModel(compareSize=(64,64)):
     #we have to generate a dataset
     x_train,y_train = [],[]
     for i in range(1, 28):
+
 
         xCurrent,yCurrent  = getPhotoPath(i)
 
@@ -101,8 +163,10 @@ def svmModel(compareSize=(64,64)):
             roi = img[y:y + h, x:x + w]
 
         imgProposition = cv2.resize(roi, compareSize)
+        #not necessary anymore as hog method is doing all that
         imgProposition = imgProposition.flatten() / 255.
-
+        # TODO:preprocess hog here xCurrent
+        # imgProposition = hogPreprocessing(imgProposition)
 
         x_train.append(imgProposition)
         y_train.append(yCurrent)
@@ -111,7 +175,7 @@ def svmModel(compareSize=(64,64)):
     svm = SVC(kernel='linear', C=1.0, decision_function_shape='ovr')
     svm.fit(x_train, y_train)
 
-    return svm
+    return svm, x_train, y_train
 
 
 def plotImage(img, title, cmapType=None):
@@ -144,6 +208,7 @@ def bestDistance(charPhoto, compareSize=(64, 64)):
         img = cv2.imread(fullPath)
         if len(img.shape) == 3:
             img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+
         #  detect a contour so there is no background stupid match
         contours,_ = cv2.findContours(img,cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         roi = None
@@ -296,10 +361,10 @@ def isodata_thresholding(image, epsilon = 2):
     image = np.where(image>=tau,255,0).astype(np.uint8)
     return image
 
-
-# plate_image_path = "recognitionTestPlate.png"
-# plate_image = cv2.imread(plate_image_path)
-# if plate_image is None:
-#     print(f"Error: Could not load image from path {plate_image_path}")
-# else:
-#     segment_and_recognize(plate_image)
+if __name__ == "__main__":
+    plate_image_path = "recognitionTestPlate.png"
+    plate_image = cv2.imread(plate_image_path)
+    if plate_image is None:
+        print(f"Error: Could not load image from path {plate_image_path}")
+    else:
+        segment_and_recognize(plate_image)
