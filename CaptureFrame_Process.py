@@ -10,7 +10,9 @@ import matplotlib.pyplot as plt
 
 
 
+
 def CaptureFrame_Process(file_path, sample_frequency, save_path):
+
     """
     In this file, you will define your own CaptureFrame_Process funtion. In this function,
     you need three arguments: file_path(str type, the video file), sample_frequency(second), save_path(final results saving path).

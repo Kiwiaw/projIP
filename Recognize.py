@@ -1,5 +1,7 @@
 from skimage.feature import hog
-from skimage.io import imread
+from sklearn.preprocessing import StandardScaler
+from sklearn.neighbors import KNeighborsClassifier
+
 
 import cv2
 import numpy as np
@@ -15,7 +17,7 @@ from sklearn.svm import SVC
 import main
 
 
-def segment_and_recognize(plate_images):
+def segment_and_recognize(plate_image):
     """
     In this file, you will define your own segment_and_recognize function.
     To do:
@@ -31,72 +33,122 @@ def segment_and_recognize(plate_images):
     Hints:
         You may need to define other functions.
     """
-    #1
-    #k1 parameter is percentage of max size of a letter/digit from the image/k2 for the smallest
-    #ratioStandard - percentage of the image that is a letter/digit
+    # 1
+    # k1 parameter is percentage of max size of a letter/digit from the image/k2 for the smallest
+    # ratioStandard - percentage of the image that is a letter/digit
+    #TODO: uncomment
     ratioStandard = 0.3
-    listOfChars = processEachDL(plate_images,0.1,0.2,0.01,ratioStandard)
+    ratioMax = 0.9
+    heighConstant = 0.2
 
-    #2
-    #First will try KNN and then different algos
-    #we iterate thorugh letters then digits and calculate an error for that
+    # def processEachDL(image, epsilon, k1, k2, ratioStandard):
+    # listOfChars = processEachDL(plate_image, 0.1, 0.2, 0.01, ratioStandard)
+
+    listOfChars = processEachDL(plate_image, 0.1, 0.3, 0.01, ratioStandard,ratioMax,heighConstant)
+
+    #
+    # print(f'len of lisOfChars: {len(listOfChars)}')
+    # 2
+    # First will try KNN and then different algos
+    # we iterate thorugh letters then digits and calculate an error for that
     # using switch we add a letter
-    #return a string
+    # return a string
     # for c in listOfChars:
-    print(main.Cat1Train)
-    svm= fineTuneTrainSet(main.Cat1Train,"dataset/groundTruth_platesFileNames.csv",0.1,0.2,0.01,ratioStandard )
+    # svm = fineTuneTrainSet(main.Cat1Train, "dataset/groundTruth_platesFileNames.csv", 0.1, 0.2, 0.01, ratioStandard)
 
+    #TODO: uncomment if doesnt work
+    svm2, _,_ =  svmModel(compareSize=(64,64), n_neighbors=3,knnDistance =True, useHog = False)
+
+
+    svm,  x_train, y_train,scaler = svmModel()
     plateString = ''
     for i in listOfChars:
 
-        # charFound, distance = bestDistance(i)
-        charFound = predictModel(svm,i)
-        plotImage(i,f'recognized as: {charFound}')
-        plateString+=str(charFound)
+        charFound = predictModel(svm2, i, compareSize=(64,64), hogUse =False)
+        if( charFound =="D" or charFound =="0" ):
+            charFound = predictModel(svm, i,scaler=scaler)
+        # plotImage(i, f'recognized as: {charFound}')
+        plateString += str(charFound)
+        # plt.imshow(cv2.cvtColor(i, cv2.COLOR_BGR2RGB))
+        # plt.title(f'{charFound}')
+        # plt.axis('off')
+        # plt.show()
     print(plateString)
-
+    return plateString
 
     # recognized_plates = [None, None, None]
     # return recognized_plates
 
-#TODO: yse image aumentation if still necessary after fine tuning
+
+
+
+
+# TODO: yse image aumentation if still necessary after fine tuning
 
 # def imageAugmentation(originalImage, imageNumber,directory,  numberOfAugumentations = 10):
 #     #TODO: save the image to the directory as its file number + 20
 #     image = originalImage.reshape((1, *originalImage.shape, 1))
 #     pass
 
-#Morphological operations
-def cleaningChar():
 
 
 
-def hogPreprocessing(image):
-    features = hog(
+def hogPreprocessing(image, visualize =False):
+    features, hog_img = hog(
         image,
-        orientations=12,
-        pixels_per_cell=(8, 8),
-        cells_per_block=(2, 2),
+        orientations=16,
+        pixels_per_cell=(4, 4),
+        cells_per_block=(3, 3),
         block_norm='L2-Hys',
-        feature_vector=True
+        feature_vector=True,
+        visualize=True
     )
+
+    # if visualize:
+    #     plt.figure(figsize=(10, 5))
+    #
+    #     plt.subplot(1, 2, 1)
+    #     plt.imshow(image, cmap='gray')
+    #     plt.title("Original Image")
+    #     plt.axis('off')
+    #
+    #     plt.subplot(1, 2, 2)
+    #     plt.imshow(hog_img, cmap='gray')
+    #     plt.title("HOG Visualization")
+    #     plt.axis('off')
+
+        # plt.show()
     return features
 
 
-
-def predictModel(myModel,imageToClassify,compareSize=(64,64)):
+def predictModel(myModel, imageToClassify, compareSize=(64,64), hogUse =True, scaler=None):
     img = imageToClassify
     if len(img.shape) == 3:
         img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    imgProposition = cv2.resize(img, compareSize)
-    imageToClassify = imgProposition.flatten() / 255.
-    # imageToClassify = hogPreprocessing(imgProposition)
 
-    imageToClassify = imageToClassify.reshape(1, -1)
+    target_size = max(img.shape)
+
+    proi = np.zeros((target_size, target_size), dtype=np.uint8)
+    y_offset = (target_size - img.shape[0]) // 2
+    x_offset = (target_size - img.shape[1]) // 2
+
+    proi[y_offset:y_offset + img.shape[0], x_offset:x_offset + img.shape[1]] = img
+
+    imgProposition = cv2.resize(proi, compareSize,interpolation=cv2.INTER_AREA)
+    # imgProposition = cleaningChar(imgProposition, (3, 3), True)
+    # imageToClassify = imgProposition.flatten() / 255.
+    if (hogUse):
+        imageToClassify = hogPreprocessing(imgProposition,True)
+    else:
+        imageToClassify = imgProposition.flatten() / 255.
+
+    imageToClassify = imageToClassify.flatten().reshape(1, -1)
+
+    if scaler is not None:
+        imageToClassify = scaler.transform(imageToClassify)
 
     y_predict = myModel.predict(imageToClassify)
     return y_predict[0]
-
 
 
 def pathToPlate(csvPath):
@@ -109,48 +161,45 @@ def pathToPlate(csvPath):
     return plate
 
 
-#TODO: do this if HOG doesnt fix the issue with 0's and O's
-def fineTuneTrainSet( Category,csvFile, epsilon,k1,k2,ratioStandard, compareSize=(64,64)):
-
-    svm,x_train_old,y_train_old = svmModel()
+# TODO: do this if HOG doesnt fix the issue with 0's and O's
+def fineTuneTrainSet(Category, csvFile, epsilon, k1, k2, ratioStandard, compareSize=(64,64)):
+    svm, x_train_old, y_train_old = svmModel()
 
     plateMapper = pathToPlate(csvFile)
 
-    x_train_new, y_train_new =[],[]
+    x_train_new, y_train_new = [], []
 
     for filePath in Category:
-        accuracy, image,lastResult = main.processJsonGetAccuracy(filePath)
+        accuracy, image, lastResult = main.processJsonGetAccuracy(filePath)
         x, y, w, h = lastResult.x, lastResult.y, lastResult.w, lastResult.h
-        listaOfChars = processEachDL(image[y:y + h, x:x + w],epsilon,k1,k2,ratioStandard)
+        listaOfChars = processEachDL(image[y:y + h, x:x + w], epsilon, k1, k2, ratioStandard)
 
         plate = plateMapper.get(filePath)
 
-
         for charImage, charLabel in zip(listaOfChars, plate):
-
-            resizedImage = cv2.resize(charImage, compareSize).flatten() / 255.0
-            # resizedImage = cv2.resize(charImage,compareSize)
-            # resizedImage = hogPreprocessing(resizedImage)
+            # resizedImage = cv2.resize(charImage, compareSize).flatten() / 255.0
+            resizedImage = cv2.resize(charImage, compareSize,interpolation=cv2.INTER_AREA)
+            # resizedImage = cleaningChar(resizedImage)
+            # resizedImage = resizedImage.flatten() / 255.0
+            resizedImage = hogPreprocessing(resizedImage)
 
             x_train_new.append(resizedImage)
             y_train_new.append(charLabel)
 
+        x_train = x_train_old + x_train_new
+        y_train = y_train_old + y_train_new
 
-        x_train =x_train_old+x_train_new
-        y_train = y_train_old +y_train_new
-
-        svm.fit(x_train,y_train)
+        svm.fit(x_train, y_train)
 
         return svm
 
 
-def svmModel(compareSize=(64,64)):
-    #we have to generate a dataset
-    x_train,y_train = [],[]
+def svmModel(compareSize=(64,64), n_neighbors=7,knnDistance =False, useHog = True):
+    # we have to generate a dataset
+    x_train, y_train = [], []
     for i in range(1, 28):
 
-
-        xCurrent,yCurrent  = getPhotoPath(i)
+        xCurrent, yCurrent = getPhotoPath(i)
 
         img = cv2.imread(xCurrent)
         if len(img.shape) == 3:
@@ -162,24 +211,60 @@ def svmModel(compareSize=(64,64)):
             x, y, w, h = cv2.boundingRect(contour)
             roi = img[y:y + h, x:x + w]
 
-        imgProposition = cv2.resize(roi, compareSize)
-        #not necessary anymore as hog method is doing all that
-        imgProposition = imgProposition.flatten() / 255.
+        target_size = max(roi.shape)
+
+        proi = np.zeros((target_size, target_size), dtype=np.uint8)
+        y_offset = (target_size - roi.shape[0]) // 2
+        x_offset = (target_size - roi.shape[1]) // 2
+
+        proi[y_offset:y_offset + roi.shape[0], x_offset:x_offset + roi.shape[1]] = roi
+
+        imgProposition = cv2.resize(proi, compareSize,interpolation=cv2.INTER_NEAREST)
+        # cleaning not necessary as these are cleaned
+        # imgProposition = cleaningChar(imgProposition)
+        # not necessary anymore as hog method is doing all that
+        # imgProposition = imgProposition.flatten() / 255.
+
+        #making sure that there is an outer black pixel frame
+        imgProposition[0, :] = 0  # Top
+        imgProposition[-1, :] = 0  # Bottom
+        imgProposition[:, 0] = 0  # Left
+        imgProposition[:, -1] = 0  # Right
         # TODO:preprocess hog here xCurrent
-        # imgProposition = hogPreprocessing(imgProposition)
+        if (useHog):
+            imgProposition = hogPreprocessing(imgProposition, False)
+        else:
+            imgProposition = imgProposition.flatten() / 255.
+
+
 
         x_train.append(imgProposition)
         y_train.append(yCurrent)
 
-    #we have to train SVM model
-    svm = SVC(kernel='linear', C=1.0, decision_function_shape='ovr')
-    svm.fit(x_train, y_train)
+    if(useHog):
+        scaler = StandardScaler()
+        x_train = scaler.fit_transform(x_train)
 
-    return svm, x_train, y_train
+
+
+    # we have to train SVM model
+
+    # svm = SVC(kernel='linear', C=1.0, decision_function_shape='ovr')
+
+    # svm = SVC(kernel='rbf', C=1.0, gamma='scale')
+    if(knnDistance):
+        knn = KNeighborsClassifier(n_neighbors, weights='distance')
+    else:
+        knn = KNeighborsClassifier(n_neighbors)
+    knn.fit(x_train, y_train)
+
+    if(useHog):
+        return knn, x_train, y_train, scaler
+    return knn, x_train, y_train
+
 
 
 def plotImage(img, title, cmapType=None):
-
     if (cmapType):
         plt.imshow(img, cmap=cmapType, vmin=0, vmax=255)
     else:
@@ -188,20 +273,17 @@ def plotImage(img, title, cmapType=None):
     plt.show()
 
 
-
 def bestDistance(charPhoto, compareSize=(64, 64)):
     if len(charPhoto.shape) == 3:
         charPhoto = cv2.cvtColor(charPhoto, cv2.COLOR_BGR2GRAY)
 
-    charPhotoResized = cv2.resize(charPhoto,compareSize)
-    charTruth = charPhotoResized.flatten()/ 255.
+    charPhotoResized = cv2.resize(charPhoto, compareSize)
+    charTruth = charPhotoResized.flatten() / 255.
 
     topDistance = float('inf')
     topLetterDigit = None
 
-
-
-    for i in range(1,28):
+    for i in range(1, 28):
 
         fullPath, label = getPhotoPath(i);
 
@@ -210,22 +292,26 @@ def bestDistance(charPhoto, compareSize=(64, 64)):
             img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
         #  detect a contour so there is no background stupid match
-        contours,_ = cv2.findContours(img,cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        contours, _ = cv2.findContours(img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+
+
         roi = None
         for contour in contours:
             x, y, w, h = cv2.boundingRect(contour)
             roi = img[y:y + h, x:x + w]
 
         imgProposition = cv2.resize(roi, compareSize)
-        imgProposition = imgProposition.flatten()/255.
+        imgProposition = imgProposition.flatten() / 255.
 
-        value = euclideanDistance(imgProposition,charTruth)
+        value = euclideanDistance(imgProposition, charTruth)
 
         if (value < topDistance):
             topLetterDigit = label
             topDistance = value
 
-    return topLetterDigit,topDistance
+    return topLetterDigit, topDistance
+
 
 def getPhotoPath(i):
     pathLetters = "dataset/SameSizeLetters"
@@ -240,7 +326,8 @@ def getPhotoPath(i):
         temp = i - 18
         fullPath = os.path.join(pathDigits, f'{temp}.bmp')
         label = str(temp)
-    return fullPath,label
+    return fullPath, label
+
 
 def assignLetter(value):
     cases = {
@@ -265,26 +352,24 @@ def assignLetter(value):
     return cases.get(value)
 
 
-
-
 def euclideanDistance(img1, img2):
     distance = np.sqrt(np.sum((img1 - img2) ** 2))
 
     return distance
 
 
-#returns an array of Digits/Letters
-def processEachDL(image, epsilon,k1,k2,ratioStandard):
-    #1
+# returns an array of Digits/Letters
+def processEachDL(image, epsilon, k1, k2, ratioStandard,ratioMax, heighConstant):
+    # 1
 
     listaChars = []
 
-    #We convert RGB->Gray
+    # We convert RGB->Gray
     imgGray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
-    #separatin into a binary image
-    image = isodata_thresholding(imgGray,epsilon)
+    # separatin into a binary image
+    image = isodata_thresholding(imgGray, epsilon)
     # inverting so letter/digits are white the plate is black
-    imageInverted = 255-image
+    imageInverted = 255 - image
 
     # plt.imshow(cv2.cvtColor(imageInverted,cv2.COLOR_GRAY2RGB))
     # plt.title('Green')
@@ -293,60 +378,77 @@ def processEachDL(image, epsilon,k1,k2,ratioStandard):
 
     # Calculate an area of the image so then we can use that to discard not valid contours
     height, width = image.shape[:2]
-    MAX_AREA = height*width
+    MAX_AREA = height * width
+    print(f'Max Area: {MAX_AREA}')
+    #
+    # plt.imshow(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
+    # plt.title(f'{MAX_AREA}')
+    # plt.axis('off')
+    # plt.show()
 
-    #Now if we have find countours for each digit
-    contours,_ = cv2.findContours(imageInverted,cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+    # Now if we have find countours for each digit
+    contours, _ = cv2.findContours(imageInverted, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     for contour in contours:
         area = cv2.contourArea(contour)
-        #if this contour is too big we discard it
-        if(MAX_AREA*k1<area or MAX_AREA*k2>area):
-            continue
 
 
         x, y, w, h = cv2.boundingRect(contour)
 
+        areaHere = w*h
 
-        #ratio
+        print(f'contour Are: {areaHere}')
+        # if this contour is too big we discard it
+        if not (MAX_AREA * k2 < areaHere < MAX_AREA * k1):
+            continue
+
+        # ratio
         roi = imageInverted[y:y + h, x:x + w]
 
         nonZeroPixelsInTheRectangle = cv2.countNonZero(roi)
         allPixelsInTheRectangle = w * h
-        ratio = nonZeroPixelsInTheRectangle/allPixelsInTheRectangle
+        ratio = nonZeroPixelsInTheRectangle / allPixelsInTheRectangle
 
-        if(ratio<ratioStandard):
+
+
+        if (ratioMax<ratio < ratioStandard):
             continue
 
-
+            # **Height-to-Image Ratio**
+        if h < heighConstant * height:
+            continue
 
         imageCropped = imageInverted[y:y + h, x:x + w]
         listaChars.append(imageCropped)
 
         # visualization
         # plt.imshow(cv2.cvtColor(imageCropped, cv2.COLOR_GRAY2RGB))
-		#
-        # plt.title('Green')
+        # plt.title(f'{area}')
         # plt.axis('off')
         # plt.show()
+
+    #
+    # plt.title('Green')
+    # plt.axis('off')
+    # plt.show()
     return listaChars
 
 
-
-def isodata_thresholding(image, epsilon = 2):
+def isodata_thresholding(image, epsilon=2):
     # Compute the histogram and set up variables
     hist = np.array(cv2.calcHist([image], [0], None, [256], [0, 256])).flatten()
     tau = np.random.randint(hist.nonzero()[0][0], 256 - hist[::-1].nonzero()[0][0])
-    old_tau = -2*epsilon
+    old_tau = -2 * epsilon
     # Iterations of the isodata thresholding algorithm
-    while(abs(tau - old_tau) >= epsilon):
+    while (abs(tau - old_tau) >= epsilon):
         ForegroundMask = image >= tau
-        #TODO Calculate m1
+        # TODO Calculate m1
         m1 = image[ForegroundMask]
-        #this so there is no division by zero problem
-        m1Len = np.count_nonzero(m1) if np.count_nonzero(m1)!=0 else 0.0001
+        # this so there is no division by zero problem
+        m1Len = np.count_nonzero(m1) if np.count_nonzero(m1) != 0 else 0.0001
         m1Sum = np.sum(m1)
-        m1 = m1Sum/m1Len
-        #TODO Calculate m2
+        m1 = m1Sum / m1Len
+        # TODO Calculate m2
         BackgroundMask = image < tau
         m2 = image[BackgroundMask]
         m2Len = np.count_nonzero(m2) if np.count_nonzero(m2) != 0 else 0.0001
@@ -358,11 +460,16 @@ def isodata_thresholding(image, epsilon = 2):
     # TODO Threshold the image based on last tau
     # background = np.where(image < tau, image, 0)
     # foreground = np.where(image >= tau, image, 0)
-    image = np.where(image>=tau,255,0).astype(np.uint8)
+    image = np.where(image >= tau, 255, 0).astype(np.uint8)
     return image
 
+
+
+
+
+
 if __name__ == "__main__":
-    plate_image_path = "recognitionTestPlate.png"
+    plate_image_path = "plate3.png"
     plate_image = cv2.imread(plate_image_path)
     if plate_image is None:
         print(f"Error: Could not load image from path {plate_image_path}")

@@ -1,15 +1,17 @@
 import argparse
+import csv
 import os
 
 import cv2
 from matplotlib import pyplot as plt
 
-import CaptureFrame_Process
+
 import numpy
 import pandas as pd
 
 # define the required arguments: video path(file_path), sample frequency(second), saving path for final result table
 # for more information of 'argparse' module, see https://docs.python.org/3/library/argparse.html
+import CaptureFrame_Process
 import Localization
 import json
 
@@ -255,16 +257,47 @@ def processJsonGetAccuracy(filePath):
 def AccuracyForFullSet(Category):
     sumAccuracy=0
 
-    for frame in Category:
-        accuracy, image,lastResult = processJsonGetAccuracy(frame)
+    #list of plates (expected chars, actual chars, time frame)
+    listaExpectedActual = []
+
+    for fileName in Category:
+        accuracy, image,lastResult = processJsonGetAccuracy(fileName)
         sumAccuracy+= accuracy
 
         x,y,w,h = lastResult.x,lastResult.y,lastResult.w, lastResult.h
         showRectangleOnImage(image,x,y,w,h)
+
+
         showPlate(image,x,y,w,h)
+
+        # Todo here for each we can get a plate numbers, dictionary
+        basePath = "dataset/groundTruth_platesFileNames.csv"
+        plateStringActual, expectedValue  = plateFullExtraction(image[y:y + h, x:x + w], fileName, basePath)
+
+        print(f'True value: {expectedValue}, Extracted value: {plateStringActual}')
 
 
     return sumAccuracy/len(Category)
+
+def plateFullExtraction(image,fileName,basePath):
+    #actual value
+    plateStringActual =  Recognize.segment_and_recognize(image)
+
+    #expected value
+    expectedValue = ""
+    with open(basePath, 'r') as file:
+        reader = csv.DictReader(file)
+        for row in reader:
+            listOfFiles = row['file name (plate)'].replace('"', '').split(', ')
+            if fileName in listOfFiles:
+                expectedValue = row['License plate']
+                break
+
+    return plateStringActual,expectedValue
+
+
+
+
 
 def showRectangleOnImage(image, x,y,w,h):
     cv2.rectangle(image, (x, y), (x + w, y + h), (0, 255, 0), 2)
@@ -280,9 +313,19 @@ def showPlate(image,x,y,w,h):
     plt.title('detected plate')
     plt.axis('off')
     plt.show()
-#
-
-# print(f'Average accuarcy: {AccuracyForFullSet(Cat2Train)}')
 
 
-basePath = "dataset/GT Train/CAT 1"
+class plateExpectedActual():
+    def __init__(self, expected, actual, fileName):
+        self.expected = expected
+        self.actual = actual
+        self.fileName = fileName
+
+
+
+if __name__ == "__main__":
+    basePath = "dataset/GT Train/CAT 1"
+    print(f'Average accuarcy: {AccuracyForFullSet(Cat1Train)}')
+
+
+
