@@ -142,12 +142,24 @@ def predictModel(myModel, imageToClassify, compareSize=(64,64), hogUse =True, sc
     else:
         imageToClassify = imgProposition.flatten() / 255.
 
+
     imageToClassify = imageToClassify.flatten().reshape(1, -1)
 
     if scaler is not None:
         imageToClassify = scaler.transform(imageToClassify)
 
     y_predict = myModel.predict(imageToClassify)
+
+
+    #TODO: check if it works
+    if hogUse:
+        # Filter out '1' and 'L' and return the top other value
+        y_predict = [pred for pred in y_predict if pred not in ['1', 'L']]
+        if y_predict:
+            return max(y_predict, key=y_predict.count)
+        else:
+            return None
+
     return y_predict[0]
 
 

@@ -3,6 +3,7 @@ import csv
 import os
 
 import cv2
+import numpy as np
 from matplotlib import pyplot as plt
 
 
@@ -260,6 +261,8 @@ def AccuracyForFullSet(Category):
     #list of plates (expected chars, actual chars, time frame)
     listaExpectedActual = []
 
+    accuracyRecognition = []
+
     for fileName in Category:
         accuracy, image,lastResult = processJsonGetAccuracy(fileName)
         sumAccuracy+= accuracy
@@ -276,8 +279,26 @@ def AccuracyForFullSet(Category):
 
         print(f'True value: {expectedValue}, Extracted value: {plateStringActual}')
 
+        currentRecognitionAccuracy = stringAccuracy(expectedValue,plateStringActual)
+        accuracyRecognition.append(currentRecognitionAccuracy)
+        print(currentRecognitionAccuracy)
+
+    finalAccuarcy = np.sum(accuracyRecognition)/len(accuracyRecognition)
+    print('ACCURACY!!!!!!!!')
+    print(finalAccuarcy)
+
 
     return sumAccuracy/len(Category)
+
+
+def stringAccuracy(string1, string2):
+    string1= string1.replace('-','')
+    if(len(string1)==0):
+        string1 = 0.0001
+    matches = sum(1 for a, b in zip(string1, string2) if a == b)
+    accuracy = (matches / len(string1)) * 100
+    return accuracy
+
 
 def plateFullExtraction(image,fileName,basePath):
     #actual value
