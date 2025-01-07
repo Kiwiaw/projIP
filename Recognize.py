@@ -1,3 +1,6 @@
+import random
+
+from scipy import ndimage
 from skimage.feature import hog
 from sklearn.preprocessing import StandardScaler
 from sklearn.neighbors import KNeighborsClassifier
@@ -17,7 +20,7 @@ from sklearn.svm import SVC
 import main
 
 
-def segment_and_recognize(plate_image):
+def segment_and_recognize(plate_image,svm,svm2,scaler):
     """
     In this file, you will define your own segment_and_recognize function.
     To do:
@@ -57,10 +60,7 @@ def segment_and_recognize(plate_image):
     # svm = fineTuneTrainSet(main.Cat1Train, "dataset/groundTruth_platesFileNames.csv", 0.1, 0.2, 0.01, ratioStandard)
 
     #TODO: uncomment if doesnt work
-    svm2, _,_ =  svmModel(compareSize=(64,64), n_neighbors=3,knnDistance =True, useHog = False)
 
-
-    svm,  x_train, y_train,scaler = svmModel()
     plateString = ''
     for i in listOfChars:
 
@@ -89,6 +89,44 @@ def segment_and_recognize(plate_image):
 #     #TODO: save the image to the directory as its file number + 20
 #     image = originalImage.reshape((1, *originalImage.shape, 1))
 #     pass
+
+
+def rotateImage(image):
+    angle = calculateRotationAngle(image)
+    image_array = np.array(image)
+    rotated = ndimage.rotate(image_array, angle)
+    plt.imshow(rotated)
+
+    plt.axis('off')
+
+    plt.show()
+    return rotated
+
+def calculateRotationAngle(image):
+    # Convert to grayscale
+    if len(image.shape) == 3:
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    else:
+        gray = image
+
+    # Ensure grayscale image is of type uint8
+    if gray.dtype != np.uint8:
+        gray = (gray * 255).astype(np.uint8)
+    # Apply Edge Detection
+    edges = cv2.Canny(gray, 50, 150)
+    # Find Contours
+    contours, _ = cv2.findContours(edges, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    # Find the largest rectangle-like contour (License plate candidate)
+    largest_contour = max(contours, key=cv2.contourArea)
+    rect = cv2.minAreaRect(largest_contour) # Get min area bounding box
+    # Get rotation angle
+    angle = rect[-1]
+    # Adjust the angle to ensure correct orientation
+    if angle < -45:
+        angle += 90
+
+    return angle -90
+
 
 
 
@@ -122,6 +160,8 @@ def hogPreprocessing(image, visualize =False):
 
 
 def predictModel(myModel, imageToClassify, compareSize=(64,64), hogUse =True, scaler=None):
+
+
     img = imageToClassify
     if len(img.shape) == 3:
         img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -209,9 +249,35 @@ def fineTuneTrainSet(Category, csvFile, epsilon, k1, k2, ratioStandard, compareS
 def svmModel(compareSize=(64,64), n_neighbors=7,knnDistance =False, useHog = True):
     # we have to generate a dataset
     x_train, y_train = [], []
-    for i in range(1, 28):
+    directoryToTravel = {}
 
+    augmentedDir = "dataset/AugmentedImages"
+    labelsFPath = os.path.join(augmentedDir, "labels")
+
+
+    for i in range(1, (28)):
         xCurrent, yCurrent = getPhotoPath(i)
+        directoryToTravel[i] = (xCurrent, yCurrent)
+
+    if os.path.exists(labelsFPath):
+        with open(labelsFPath, 'r') as labelF:
+            for line in labelF:
+                parts = line.strip().split()
+                if len(parts) == 2:
+                    imageName, label = parts
+                    imagePath = os.path.join(augmentedDir, imageName)
+                    directoryToTravel[len(directoryToTravel) + 1] = (imagePath, label)
+
+    print(directoryToTravel)
+
+    shuffled_items = list(directoryToTravel.items())
+    random.shuffle(shuffled_items)
+
+
+
+    for key, (xCurrent, yCurrent) in shuffled_items:
+
+
 
         img = cv2.imread(xCurrent)
         if len(img.shape) == 3:
@@ -369,38 +435,103 @@ def euclideanDistance(img1, img2):
 
     return distance
 
+def findEdges(mask, minSize=(300, 100), stackCount=3):
+
+    if mask.shape[1] < minSize[0] or mask.shape[0] < minSize[1]:
+        scaleX = minSize[0] / mask.shape[1]
+        scaleY = minSize[1] / mask.shape[0]
+        scale = max(scaleX, scaleY)
+        mask = cv2.resize(mask, None, fx=scale, fy=scale, interpolation=cv2.INTER_CUBIC)
+
+
+
+    stacked = np.zeros_like(mask, dtype=np.float32)
+    for _ in range(stackCount):
+        stacked += mask.astype(np.float32)
+    stacked = np.clip(stacked, 0, 255).astype(np.uint8)
+
+    stacked= 10*stacked
+
+
+
+    plt.imshow(cv2.cvtColor(stacked, cv2.COLOR_GRAY2RGB))
+    plt.title('Stacked')
+    plt.axis('off')
+    plt.show()
+    _, thresh = cv2.threshold(stacked, 120, 255, cv2.THRESH_BINARY)
+
+
+    thresh = 255 - thresh
+
+
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
+    closed = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel, iterations=2)
+
+    plt.imshow(cv2.cvtColor(closed, cv2.COLOR_GRAY2RGB))
+    plt.title('Closed image - fill in the gaps')
+    plt.axis('off')
+    plt.show()
+
+
+    cleaned = cv2.morphologyEx(closed, cv2.MORPH_OPEN, kernel, iterations=1)
+
+    plt.imshow(cv2.cvtColor(cleaned, cv2.COLOR_GRAY2RGB))
+    plt.title('Cleaned Black Letters on White BG')
+    plt.axis('off')
+    plt.show()
+
+    return cleaned
+
 
 # returns an array of Digits/Letters
 def processEachDL(image, epsilon, k1, k2, ratioStandard,ratioMax, heighConstant):
     # 1
-
+    # image = rotateImage(image)
     listaChars = []
 
     # We convert RGB->Gray
     imgGray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
+    plt.imshow(cv2.cvtColor(imgGray,cv2.COLOR_GRAY2RGB))
+    plt.title('after rgb2gray')
+    plt.axis('off')
+    plt.show()
+
+
+
     # separatin into a binary image
+    #TODO: uncomment
     image = isodata_thresholding(imgGray, epsilon)
     # inverting so letter/digits are white the plate is black
-    imageInverted = 255 - image
-
-    # plt.imshow(cv2.cvtColor(imageInverted,cv2.COLOR_GRAY2RGB))
-    # plt.title('Green')
-    # plt.axis('off')
-    # plt.show()
+    imageInverted = imgGray -255
+    plt.imshow(cv2.cvtColor(imageInverted,cv2.COLOR_GRAY2RGB))
+    plt.title('after is o ')
+    plt.axis('off')
+    plt.show()
 
     # Calculate an area of the image so then we can use that to discard not valid contours
     height, width = image.shape[:2]
     MAX_AREA = height * width
-    print(f'Max Area: {MAX_AREA}')
-    #
+    # print(f'Max Area: {MAX_AREA}')
+    # #
     # plt.imshow(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
     # plt.title(f'{MAX_AREA}')
     # plt.axis('off')
     # plt.show()
 
 
+
+
+
     # Now if we have find countours for each digit
     contours, _ = cv2.findContours(imageInverted, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+    if (len(contours) == 0):
+        # check if there are contours??? if no then go to
+        imageInverted = findEdges(imgGray)
+        plt.imshow(cv2.cvtColor(imageInverted, cv2.COLOR_GRAY2RGB))
+        plt.title('AFTER Edges doesnt count lol ')
+        plt.axis('off')
+        plt.show()
     for contour in contours:
         area = cv2.contourArea(contour)
 
@@ -426,7 +557,7 @@ def processEachDL(image, epsilon, k1, k2, ratioStandard,ratioMax, heighConstant)
         if (ratioMax<ratio < ratioStandard):
             continue
 
-            # **Height-to-Image Ratio**
+
         if h < heighConstant * height:
             continue
 
@@ -473,8 +604,12 @@ def isodata_thresholding(image, epsilon=2):
     # background = np.where(image < tau, image, 0)
     # foreground = np.where(image >= tau, image, 0)
     image = np.where(image >= tau, 255, 0).astype(np.uint8)
-    return image
 
+    # tau = max(0, min(255, tau))
+    #
+    #
+    # binary_image = cv2.threshold(image, tau, 255, cv2.THRESH_BINARY)[1]
+    return image
 
 
 
@@ -483,7 +618,12 @@ def isodata_thresholding(image, epsilon=2):
 if __name__ == "__main__":
     plate_image_path = "plate3.png"
     plate_image = cv2.imread(plate_image_path)
+    svm2, _, _ = svmModel(compareSize=(64, 64), n_neighbors=2, knnDistance=True, useHog=False)
+
+    svm, x_train, y_train, scaler = svmModel()
     if plate_image is None:
         print(f"Error: Could not load image from path {plate_image_path}")
     else:
-        segment_and_recognize(plate_image)
+        segment_and_recognize(plate_image,svm,svm2,scaler)
+
+

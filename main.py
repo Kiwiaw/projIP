@@ -142,6 +142,7 @@ def fetchStartEndGTFrameValues(file_path, startFrame, endFrame,x1, y1, w1, h1):
             listaResults.append(resultHere)
             debugDisctionary[resultHere] =frame
     # return list with Result
+
     return listaResults,debugDisctionary
 
 
@@ -163,7 +164,7 @@ def getHighestAccuracyForEachOneGT(x1, y1, w1, h1, startFrame, endFrame, file_pa
         if (currentAccuracy > biggestAccuracy):
             biggestAccuracy = currentAccuracy
             lastResult =R
-    image =debugDisctionary[lastResult]
+    image = debugDisctionary.get(lastResult, None)
     #best detected squares for all
     # x,y,w,h = lastResult.x,lastResult.y,lastResult.w, lastResult.h
     # cv2.rectangle(image, (x, y), (x + w, y + h), (0, 255, 0), 2)
@@ -175,6 +176,8 @@ def getHighestAccuracyForEachOneGT(x1, y1, w1, h1, startFrame, endFrame, file_pa
     #Here can be called image recognition function for characters
 
     print(f'Higest accuracy is: {biggestAccuracy}')
+    if image is None:
+        return biggestAccuracy, None, lastResult
     return biggestAccuracy, image,lastResult
 
 
@@ -258,6 +261,10 @@ def processJsonGetAccuracy(filePath):
 def AccuracyForFullSet(Category):
     sumAccuracy=0
 
+    svm, x_train, y_train, scaler = Recognize.svmModel()
+    svm2, _, _ = Recognize.svmModel(compareSize=(64, 64), n_neighbors=3, knnDistance=True, useHog=False)
+
+
     #list of plates (expected chars, actual chars, time frame)
     listaExpectedActual = []
 
@@ -266,22 +273,26 @@ def AccuracyForFullSet(Category):
     for fileName in Category:
         accuracy, image,lastResult = processJsonGetAccuracy(fileName)
         sumAccuracy+= accuracy
-
+        if(image is None):
+            continue
         x,y,w,h = lastResult.x,lastResult.y,lastResult.w, lastResult.h
         showRectangleOnImage(image,x,y,w,h)
 
 
         showPlate(image,x,y,w,h)
 
-        # Todo here for each we can get a plate numbers, dictionary
+
         basePath = "dataset/groundTruth_platesFileNames.csv"
-        plateStringActual, expectedValue  = plateFullExtraction(image[y:y + h, x:x + w], fileName, basePath)
+        plateStringActual, expectedValue  = plateFullExtraction(image[y:y + h, x:x + w], fileName, basePath,svm,svm2,scaler)
 
         print(f'True value: {expectedValue}, Extracted value: {plateStringActual}')
 
         currentRecognitionAccuracy = stringAccuracy(expectedValue,plateStringActual)
         accuracyRecognition.append(currentRecognitionAccuracy)
-        print(currentRecognitionAccuracy)
+        if(currentRecognitionAccuracy==0.0):
+            print("ZERO ACCURACY")
+        else:
+            print(currentRecognitionAccuracy)
 
     finalAccuarcy = np.sum(accuracyRecognition)/len(accuracyRecognition)
     print('ACCURACY!!!!!!!!')
@@ -293,16 +304,25 @@ def AccuracyForFullSet(Category):
 
 def stringAccuracy(string1, string2):
     string1= string1.replace('-','')
-    if(len(string1)==0):
-        string1 = 0.0001
-    matches = sum(1 for a, b in zip(string1, string2) if a == b)
+    if not isinstance(string1, str):
+        string1 = str(string1)
+    if not isinstance(string2, str):
+        string2 = str(string2)
+    if len(string1) == 0 or len(string2) == 0:
+        return 0.0
+
+    set1 = set(string1)
+    set2 = set(string2)
+
+    matches = len(set1.intersection(set2))
+
     accuracy = (matches / len(string1)) * 100
     return accuracy
 
 
-def plateFullExtraction(image,fileName,basePath):
+def plateFullExtraction(image,fileName,basePath,svm,svm2,scaler):
     #actual value
-    plateStringActual =  Recognize.segment_and_recognize(image)
+    plateStringActual =  Recognize.segment_and_recognize(image,svm,svm2,scaler)
 
     #expected value
     expectedValue = ""
@@ -313,6 +333,11 @@ def plateFullExtraction(image,fileName,basePath):
             if fileName in listOfFiles:
                 expectedValue = row['License plate']
                 break
+    if not isinstance(expectedValue, str):
+        expectedValue = str(expectedValue if expectedValue is not None else "")
+
+    print(f"Expected Value: {expectedValue}, Type: {type(expectedValue)}")
+    print(f"Plate String Actual: {plateStringActual}, Type: {type(plateStringActual)}")
 
     return plateStringActual,expectedValue
 
@@ -322,6 +347,7 @@ def plateFullExtraction(image,fileName,basePath):
 
 def showRectangleOnImage(image, x,y,w,h):
     cv2.rectangle(image, (x, y), (x + w, y + h), (0, 255, 0), 2)
+    #TODO: uncomment
     plt.imshow(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
     plt.title('Detected best square over plate')
     plt.axis('off')
@@ -330,6 +356,7 @@ def showRectangleOnImage(image, x,y,w,h):
 
 def showPlate(image,x,y,w,h):
     result = image[y:y + h, x:x + w]
+    # TODO: uncomment
     plt.imshow(cv2.cvtColor(result, cv2.COLOR_BGR2RGB))
     plt.title('detected plate')
     plt.axis('off')
