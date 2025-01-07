@@ -302,6 +302,7 @@ def AccuracyForFullSet(Category):
 
     return sumAccuracy/len(Category)
 
+from collections import Counter
 
 def stringAccuracy(string1, string2):
     string1= string1.replace('-','')
@@ -312,13 +313,17 @@ def stringAccuracy(string1, string2):
     if len(string1) == 0 or len(string2) == 0:
         return 0.0
 
-    set1 = set(string1)
-    set2 = set(string2)
+    c1 = Counter(string1)
+    c2 = Counter(string2)
 
-    matches = len(set1.intersection(set2))
+    common_chars = 0
+    for char in c1:
+        common_chars += min(c1[char], c2.get(char, 0))
 
-    accuracy = (matches / len(string1)) * 100
+
+    accuracy = (common_chars / len(string1)) * 100
     return accuracy
+
 
 
 def plateFullExtraction(image,fileName,basePath,svm,svm2,scaler):
@@ -349,19 +354,19 @@ def plateFullExtraction(image,fileName,basePath,svm,svm2,scaler):
 def showRectangleOnImage(image, x,y,w,h):
     cv2.rectangle(image, (x, y), (x + w, y + h), (0, 255, 0), 2)
     #TODO: uncomment
-    plt.imshow(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
-    plt.title('Detected best square over plate')
-    plt.axis('off')
-    plt.show()
+    # plt.imshow(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
+    # plt.title('Detected best square over plate')
+    # plt.axis('off')
+    # plt.show()
 
 
 def showPlate(image,x,y,w,h):
     result = image[y:y + h, x:x + w]
     # TODO: uncomment
-    plt.imshow(cv2.cvtColor(result, cv2.COLOR_BGR2RGB))
-    plt.title('detected plate')
-    plt.axis('off')
-    plt.show()
+    # plt.imshow(cv2.cvtColor(result, cv2.COLOR_BGR2RGB))
+    # plt.title('detected plate')
+    # plt.axis('off')
+    # plt.show()
 
 
 class plateExpectedActual():

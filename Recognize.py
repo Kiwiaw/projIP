@@ -435,118 +435,124 @@ def euclideanDistance(img1, img2):
 
     return distance
 
-def findEdges(mask, minSize=(450, 190), stackCount=3):
 
-    if mask.shape[1] < minSize[0] or mask.shape[0] < minSize[1]:
-        scaleX = minSize[0] / mask.shape[1]
-        scaleY = minSize[1] / mask.shape[0]
+
+def findEdges(mask, minSize=(450, 190), stackCount=3, debug=False):
+
+
+    orig_h, orig_w = mask.shape[:2]
+    if orig_w < minSize[0] or orig_h < minSize[1]:
+        scaleX = minSize[0] / orig_w
+        scaleY = minSize[1] / orig_h
         scale = max(scaleX, scaleY)
         mask = cv2.resize(mask, None, fx=scale, fy=scale, interpolation=cv2.INTER_CUBIC)
 
+    if debug:
+        plt.imshow(mask, cmap='gray')
+        plt.title('Mask start')
+        plt.axis('off')
+        plt.show()
 
 
+    kernel_close = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
+    mask_closed = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel_close, iterations=3)
+
+    if debug:
+        plt.imshow(mask_closed, cmap='gray')
+        plt.title('closing ')
+        plt.axis('off')
+        plt.show()
 
 
-    # stacked= 10*stacked
-    #
-    #
-    #
-    # plt.imshow(cv2.cvtColor(stacked, cv2.COLOR_GRAY2RGB))
-    # plt.title('Stacked')
-    # plt.axis('off')
-    # plt.show()
-    # _, thresh = cv2.threshold(stacked, 120, 255, cv2.THRESH_BINARY)
-
-    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
-    mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel, iterations=3)
-
-    stacked = np.zeros_like(mask, dtype=np.float32)
+    stacked = np.zeros_like(mask_closed, dtype=np.float32)
     for _ in range(stackCount):
-        stacked += mask.astype(np.float32)
+        stacked += mask_closed.astype(np.float32)
+
     stacked = np.clip(stacked, 0, 255).astype(np.uint8)
 
 
-    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
-    stacked = clahe.apply(stacked)
+    clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
+    stacked_clahe = clahe.apply(stacked)
 
-    plt.imshow(stacked, cmap='gray')
-    plt.title('Contrast Enhanced')
-    plt.axis('off')
-    plt.show()
+    if debug:
+        plt.imshow(stacked_clahe, cmap='gray')
+        plt.title(" CLAHE DONE +++")
+        plt.axis('off')
+        plt.show()
 
-    kernel = np.array([[0, -0.5, 0],
-                       [-0.5, 3, -0.5],
-                       [0, -0.5, 0]])
-    sharpened = cv2.filter2D(stacked, -1, kernel)
+    blurred = cv2.GaussianBlur(stacked_clahe, (3, 3), 0)
+    sharpened = cv2.addWeighted(stacked_clahe, 1.5, blurred, -0.5, 0)
 
-    plt.imshow(sharpened, cmap='gray')
-    plt.title('Sharpened')
-    plt.axis('off')
-    plt.show()
-
-
-    _, thresh = cv2.threshold(sharpened, 120, 255, cv2.THRESH_BINARY)
-
-    thresh = 255 - thresh
+    if debug:
+        plt.imshow(sharpened, cmap='gray')
+        plt.title('AFTER SHARPENING ')
+        plt.axis('off')
+        plt.show()
 
 
-    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
-    closed = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel, iterations=3)
 
-    plt.imshow(cv2.cvtColor(closed, cv2.COLOR_GRAY2RGB))
-    plt.title('Closed image - fill in the gaps')
-    plt.axis('off')
-    plt.show()
+    thresh = isodata_thresholding(sharpened)
 
 
-    cleaned = cv2.morphologyEx(closed, cv2.MORPH_OPEN, kernel, iterations=2)
 
-    plt.imshow(cv2.cvtColor(cleaned, cv2.COLOR_GRAY2RGB))
-    plt.title('Cleaned Black Letters on White BG')
-    plt.axis('off')
-    plt.show()
+    thresh_inv = 255 - thresh
 
-    bold_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (2, 2))
-    bold = cv2.dilate(cleaned, bold_kernel, iterations=3)
-
-    plt.imshow(bold, cmap='gray')
-    plt.title('Final Bold Effect')
-    plt.axis('off')
-    plt.show()
-
-    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
-    closed = cv2.morphologyEx(bold, cv2.MORPH_CLOSE, kernel, iterations=3)
+    if debug:
+        plt.imshow(thresh_inv, cmap='gray')
+        plt.title(' DONe treshold isodata_thresholding ')
+        plt.axis('off')
+        plt.show()
 
 
-    #Last try:
-    dilate_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (2, 2))
-    dilated = cv2.dilate(closed, dilate_kernel, iterations=1)
+    kernel_open = cv2.getStructuringElement(cv2.MORPH_RECT, (2, 2))
+    opened = cv2.morphologyEx(thresh_inv, cv2.MORPH_OPEN, kernel_open, iterations=2)
 
-    plt.imshow(dilated, cmap='gray')
-    plt.title('Thicker Letters (After Dilation)')
-    plt.axis('off')
-    plt.show()
+    if debug:
+        plt.imshow(opened, cmap='gray')
+        plt.title(' OPENIN G')
+        plt.axis('off')
+        plt.show()
+
+    kernel_close2 = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
+    closed = cv2.morphologyEx(opened, cv2.MORPH_CLOSE, kernel_close2, iterations=2)
+
+    if debug:
+        plt.imshow(closed, cmap='gray')
+        plt.title('CLOSING ')
+        plt.axis('off')
+        plt.show()
+
+    kernel_dilate = cv2.getStructuringElement(cv2.MORPH_RECT, (2, 2))
+    dilated = cv2.dilate(closed, kernel_dilate, iterations=1)
+
+    if debug:
+        plt.imshow(dilated, cmap='gray')
+        plt.title(' thinckening layers ')
+        plt.axis('off')
+        plt.show()
+
+    kernel_erode = cv2.getStructuringElement(cv2.MORPH_RECT, (2, 2))
+    eroded = cv2.erode(dilated, kernel_erode, iterations=1)
+
+    if debug:
+        plt.imshow(eroded, cmap='gray')
+        plt.title('Eroded')
+        plt.axis('off')
+        plt.show()
 
 
-    erode_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (2, 2))
-    eroded = cv2.erode(dilated, erode_kernel, iterations=1)
+    final = cv2.morphologyEx(eroded, cv2.MORPH_CLOSE, kernel_close2, iterations=2)
 
-    #
-    plt.imshow(eroded, cmap='gray')
-    plt.title('Refined Letters (After Erosion)')
-    plt.axis('off')
-    plt.show()
+    if debug:
+        plt.imshow(final, cmap='gray')
+        plt.title('Final Result!!!! <3')
+        plt.axis('off')
+        plt.show()
+
+    return final
 
 
-    close_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
-    closed = cv2.morphologyEx(eroded, cv2.MORPH_CLOSE, close_kernel, iterations=1)
 
-    # plt.imshow(closed, cmap='gray')
-    # plt.title('Gaps Filled (After Closing)')
-    # plt.axis('off')
-    # plt.show()
-
-    return closed
 
 
 # returns an array of Digits/Letters
@@ -557,20 +563,22 @@ def processEachDL(image, epsilon, k1, k2, ratioStandard,ratioMax, heighConstant)
     # We convert RGB->Gray
     imgGray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
 
-    plt.imshow(cv2.cvtColor(imgGray, cv2.COLOR_BGR2RGB))
-    plt.title(f'Gray image')
-    plt.axis('off')
-    plt.show()
+    #LAST
+    # plt.imshow(cv2.cvtColor(imgGray, cv2.COLOR_BGR2RGB))
+    # plt.title(f'Gray image')
+    # plt.axis('off')
+    # plt.show()
 
     # separatin into a binary image
     image = isodata_thresholding(imgGray, epsilon)
     # inverting so letter/digits are white the plate is black
     imageInverted = 255 - image
 
-    plt.imshow(cv2.cvtColor(imageInverted,cv2.COLOR_GRAY2RGB))
-    plt.title('Green')
-    plt.axis('off')
-    plt.show()
+    #LAST
+    # plt.imshow(cv2.cvtColor(imageInverted,cv2.COLOR_GRAY2RGB))
+    # plt.title('Green')
+    # plt.axis('off')
+    # plt.show()
 
     # Calculate an area of the image so then we can use that to discard not valid contours
     height, width = image.shape[:2]
@@ -584,17 +592,19 @@ def processEachDL(image, epsilon, k1, k2, ratioStandard,ratioMax, heighConstant)
     contours, _ = cv2.findContours(imageInverted, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
     flag  = False
-    if (len(contours) <6):
+    # if (len(contours) <6):
+    if(True):
         flag = True
         # check if there are contours??? if no then go to
 
         imageInverted = findEdges(imgGray)
         contours, _ = cv2.findContours(imageInverted, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        plt.imshow(cv2.cvtColor(imageInverted, cv2.COLOR_GRAY2RGB))
-        plt.title(f'AFTER Edges doesnt count lol + len of contours  {len(contours)}')
-        plt.axis('off')
-        plt.show()
-        # height, width = imageInverted.shape[:2]
+        #LAST
+        # plt.imshow(cv2.cvtColor(imageInverted, cv2.COLOR_GRAY2RGB))
+        # plt.title(f'AFTER Edges doesnt count lol + len of contours  {len(contours)}')
+        # plt.axis('off')
+        # plt.show()
+        height, width = imageInverted.shape[:2]
         MAX_AREA = height * width
     print(f'Max Area: {MAX_AREA}')
     for contour in contours:
@@ -609,10 +619,11 @@ def processEachDL(image, epsilon, k1, k2, ratioStandard,ratioMax, heighConstant)
         areaHere = w*h
 
         if (flag):
-            plt.imshow(cv2.cvtColor(imageInverted[y:y + h, x:x + w], cv2.COLOR_GRAY2RGB))
-            plt.title('ROI IMAGE INVERTED INSIDE contour extraction ')
-            plt.axis('off')
-            plt.show()
+            #LAST
+            # plt.imshow(cv2.cvtColor(imageInverted[y:y + h, x:x + w], cv2.COLOR_GRAY2RGB))
+            # plt.title('ROI IMAGE INVERTED INSIDE contour extraction ')
+            # plt.axis('off')
+            # plt.show()
             pass
 
         print(f'contour Are: {areaHere}')
@@ -644,22 +655,13 @@ def processEachDL(image, epsilon, k1, k2, ratioStandard,ratioMax, heighConstant)
             imageCropped = imageInverted[y:y + h, x:x + w]
             listaChars.append(imageCropped)
 
-            # visualization
-            plt.imshow(cv2.cvtColor(imageCropped, cv2.COLOR_GRAY2RGB))
-            plt.title(f'{area}')
-            plt.axis('off')
-            plt.show()
-        # else:
-        #
-        #     if not (MAX_AREA * k2 < areaHere < MAX_AREA * k1):
-        #         continue
-        #
-        #     # ratio
-        #
-        #     roi = imageInverted[y:y + h, x:x + w]
-        #     imageCropped = imageInverted[y:y + h, x:x + w]
-        #     listaChars.append(imageCropped)
-    #
+            # visualization LAST
+            # plt.imshow(cv2.cvtColor(imageCropped, cv2.COLOR_GRAY2RGB))
+            # plt.title(f'{area}')
+            # plt.axis('off')
+            # plt.show()
+
+
     # plt.title('Green')
     # plt.axis('off')
     # plt.show()
