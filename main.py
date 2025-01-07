@@ -3,6 +3,7 @@ import csv
 import os
 
 import cv2
+import joblib
 import numpy as np
 from matplotlib import pyplot as plt
 
@@ -261,9 +262,9 @@ def processJsonGetAccuracy(filePath):
 def AccuracyForFullSet(Category):
     sumAccuracy=0
 
-    svm, x_train, y_train, scaler = Recognize.svmModel()
-    svm2, _, _ = Recognize.svmModel(compareSize=(64, 64), n_neighbors=3, knnDistance=True, useHog=False)
-
+    # svm, x_train, y_train, scaler = Recognize.svmModel()
+    # svm2, _, _ = Recognize.svmModel(compareSize=(64, 64), n_neighbors=3, knnDistance=True, useHog=False)
+    svm, svm2, scaler = joblib.load('svm_model.pkl'), joblib.load('svm2_model.pkl'), joblib.load('scaler.pkl')
 
     #list of plates (expected chars, actual chars, time frame)
     listaExpectedActual = []
@@ -372,8 +373,8 @@ class plateExpectedActual():
 
 
 if __name__ == "__main__":
-    basePath = "dataset/GT Train/CAT 1"
-    print(f'Average accuarcy: {AccuracyForFullSet(Cat1Train)}')
+    basePath = "dataset/GT Train/CAT 3"
+    print(f'Average accuarcy: {AccuracyForFullSet(Cat3Train)}')
 
 
 

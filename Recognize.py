@@ -4,7 +4,7 @@ from scipy import ndimage
 from skimage.feature import hog
 from sklearn.preprocessing import StandardScaler
 from sklearn.neighbors import KNeighborsClassifier
-
+import joblib
 
 import cv2
 import numpy as np
@@ -435,7 +435,7 @@ def euclideanDistance(img1, img2):
 
     return distance
 
-def findEdges(mask, minSize=(300, 100), stackCount=3):
+def findEdges(mask, minSize=(450, 190), stackCount=3):
 
     if mask.shape[1] < minSize[0] or mask.shape[0] < minSize[1]:
         scaleX = minSize[0] / mask.shape[1]
@@ -445,27 +445,53 @@ def findEdges(mask, minSize=(300, 100), stackCount=3):
 
 
 
+
+
+    # stacked= 10*stacked
+    #
+    #
+    #
+    # plt.imshow(cv2.cvtColor(stacked, cv2.COLOR_GRAY2RGB))
+    # plt.title('Stacked')
+    # plt.axis('off')
+    # plt.show()
+    # _, thresh = cv2.threshold(stacked, 120, 255, cv2.THRESH_BINARY)
+
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
+    mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel, iterations=3)
+
     stacked = np.zeros_like(mask, dtype=np.float32)
     for _ in range(stackCount):
         stacked += mask.astype(np.float32)
     stacked = np.clip(stacked, 0, 255).astype(np.uint8)
 
-    stacked= 10*stacked
 
+    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+    stacked = clahe.apply(stacked)
 
-
-    plt.imshow(cv2.cvtColor(stacked, cv2.COLOR_GRAY2RGB))
-    plt.title('Stacked')
+    plt.imshow(stacked, cmap='gray')
+    plt.title('Contrast Enhanced')
     plt.axis('off')
     plt.show()
-    _, thresh = cv2.threshold(stacked, 120, 255, cv2.THRESH_BINARY)
 
+    kernel = np.array([[0, -0.5, 0],
+                       [-0.5, 3, -0.5],
+                       [0, -0.5, 0]])
+    sharpened = cv2.filter2D(stacked, -1, kernel)
+
+    plt.imshow(sharpened, cmap='gray')
+    plt.title('Sharpened')
+    plt.axis('off')
+    plt.show()
+
+
+    _, thresh = cv2.threshold(sharpened, 120, 255, cv2.THRESH_BINARY)
 
     thresh = 255 - thresh
 
 
     kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
-    closed = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel, iterations=2)
+    closed = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel, iterations=3)
 
     plt.imshow(cv2.cvtColor(closed, cv2.COLOR_GRAY2RGB))
     plt.title('Closed image - fill in the gaps')
@@ -473,103 +499,166 @@ def findEdges(mask, minSize=(300, 100), stackCount=3):
     plt.show()
 
 
-    cleaned = cv2.morphologyEx(closed, cv2.MORPH_OPEN, kernel, iterations=1)
+    cleaned = cv2.morphologyEx(closed, cv2.MORPH_OPEN, kernel, iterations=2)
 
     plt.imshow(cv2.cvtColor(cleaned, cv2.COLOR_GRAY2RGB))
     plt.title('Cleaned Black Letters on White BG')
     plt.axis('off')
     plt.show()
 
-    return cleaned
+    bold_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (2, 2))
+    bold = cv2.dilate(cleaned, bold_kernel, iterations=3)
+
+    plt.imshow(bold, cmap='gray')
+    plt.title('Final Bold Effect')
+    plt.axis('off')
+    plt.show()
+
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
+    closed = cv2.morphologyEx(bold, cv2.MORPH_CLOSE, kernel, iterations=3)
 
 
-# returns an array of Digits/Letters
-def processEachDL(image, epsilon, k1, k2, ratioStandard,ratioMax, heighConstant):
-    # 1
-    # image = rotateImage(image)
-    listaChars = []
+    #Last try:
+    dilate_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (2, 2))
+    dilated = cv2.dilate(closed, dilate_kernel, iterations=1)
 
-    # We convert RGB->Gray
-    imgGray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
-    plt.imshow(cv2.cvtColor(imgGray,cv2.COLOR_GRAY2RGB))
-    plt.title('after rgb2gray')
+    plt.imshow(dilated, cmap='gray')
+    plt.title('Thicker Letters (After Dilation)')
     plt.axis('off')
     plt.show()
 
 
+    erode_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (2, 2))
+    eroded = cv2.erode(dilated, erode_kernel, iterations=1)
+
+    #
+    plt.imshow(eroded, cmap='gray')
+    plt.title('Refined Letters (After Erosion)')
+    plt.axis('off')
+    plt.show()
+
+
+    close_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
+    closed = cv2.morphologyEx(eroded, cv2.MORPH_CLOSE, close_kernel, iterations=1)
+
+    # plt.imshow(closed, cmap='gray')
+    # plt.title('Gaps Filled (After Closing)')
+    # plt.axis('off')
+    # plt.show()
+
+    return closed
+
+
+# returns an array of Digits/Letters
+def processEachDL(image, epsilon, k1, k2, ratioStandard,ratioMax, heighConstant):
+
+    listaChars = []
+
+    # We convert RGB->Gray
+    imgGray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
+
+    plt.imshow(cv2.cvtColor(imgGray, cv2.COLOR_BGR2RGB))
+    plt.title(f'Gray image')
+    plt.axis('off')
+    plt.show()
 
     # separatin into a binary image
-    #TODO: uncomment
     image = isodata_thresholding(imgGray, epsilon)
     # inverting so letter/digits are white the plate is black
-    imageInverted = imgGray -255
+    imageInverted = 255 - image
+
     plt.imshow(cv2.cvtColor(imageInverted,cv2.COLOR_GRAY2RGB))
-    plt.title('after is o ')
+    plt.title('Green')
     plt.axis('off')
     plt.show()
 
     # Calculate an area of the image so then we can use that to discard not valid contours
     height, width = image.shape[:2]
     MAX_AREA = height * width
-    # print(f'Max Area: {MAX_AREA}')
-    # #
-    # plt.imshow(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
-    # plt.title(f'{MAX_AREA}')
-    # plt.axis('off')
-    # plt.show()
 
-
+    #
 
 
 
     # Now if we have find countours for each digit
     contours, _ = cv2.findContours(imageInverted, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-    if (len(contours) == 0):
+    flag  = False
+    if (len(contours) <6):
+        flag = True
         # check if there are contours??? if no then go to
+
         imageInverted = findEdges(imgGray)
+        contours, _ = cv2.findContours(imageInverted, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         plt.imshow(cv2.cvtColor(imageInverted, cv2.COLOR_GRAY2RGB))
-        plt.title('AFTER Edges doesnt count lol ')
+        plt.title(f'AFTER Edges doesnt count lol + len of contours  {len(contours)}')
         plt.axis('off')
         plt.show()
+        # height, width = imageInverted.shape[:2]
+        MAX_AREA = height * width
+    print(f'Max Area: {MAX_AREA}')
     for contour in contours:
         area = cv2.contourArea(contour)
+
+
+
 
 
         x, y, w, h = cv2.boundingRect(contour)
 
         areaHere = w*h
 
+        if (flag):
+            plt.imshow(cv2.cvtColor(imageInverted[y:y + h, x:x + w], cv2.COLOR_GRAY2RGB))
+            plt.title('ROI IMAGE INVERTED INSIDE contour extraction ')
+            plt.axis('off')
+            plt.show()
+            pass
+
         print(f'contour Are: {areaHere}')
         # if this contour is too big we discard it
-        if not (MAX_AREA * k2 < areaHere < MAX_AREA * k1):
-            continue
 
-        # ratio
-        roi = imageInverted[y:y + h, x:x + w]
+        if (True):
 
-        nonZeroPixelsInTheRectangle = cv2.countNonZero(roi)
-        allPixelsInTheRectangle = w * h
-        ratio = nonZeroPixelsInTheRectangle / allPixelsInTheRectangle
+            if not (MAX_AREA * k2 < areaHere < MAX_AREA * k1):
+                continue
+
+            # ratio
 
 
+            roi = imageInverted[y:y + h, x:x + w]
 
-        if (ratioMax<ratio < ratioStandard):
-            continue
+            nonZeroPixelsInTheRectangle = cv2.countNonZero(roi)
+            allPixelsInTheRectangle = w * h
+            ratio = nonZeroPixelsInTheRectangle / allPixelsInTheRectangle
 
 
-        if h < heighConstant * height:
-            continue
 
-        imageCropped = imageInverted[y:y + h, x:x + w]
-        listaChars.append(imageCropped)
+            if (ratioMax<ratio < ratioStandard):
+                continue
 
-        # visualization
-        # plt.imshow(cv2.cvtColor(imageCropped, cv2.COLOR_GRAY2RGB))
-        # plt.title(f'{area}')
-        # plt.axis('off')
-        # plt.show()
 
+            if h < heighConstant * height:
+                continue
+
+            imageCropped = imageInverted[y:y + h, x:x + w]
+            listaChars.append(imageCropped)
+
+            # visualization
+            plt.imshow(cv2.cvtColor(imageCropped, cv2.COLOR_GRAY2RGB))
+            plt.title(f'{area}')
+            plt.axis('off')
+            plt.show()
+        # else:
+        #
+        #     if not (MAX_AREA * k2 < areaHere < MAX_AREA * k1):
+        #         continue
+        #
+        #     # ratio
+        #
+        #     roi = imageInverted[y:y + h, x:x + w]
+        #     imageCropped = imageInverted[y:y + h, x:x + w]
+        #     listaChars.append(imageCropped)
     #
     # plt.title('Green')
     # plt.axis('off')
@@ -616,11 +705,20 @@ def isodata_thresholding(image, epsilon=2):
 
 
 if __name__ == "__main__":
-    plate_image_path = "plate3.png"
+    plate_image_path = "plate4.png"
     plate_image = cv2.imread(plate_image_path)
-    svm2, _, _ = svmModel(compareSize=(64, 64), n_neighbors=2, knnDistance=True, useHog=False)
+    # svm2, _, _ = svmModel(compareSize=(64, 64), n_neighbors=2, knnDistance=True, useHog=False)
+    #
+    # svm, x_train, y_train, scaler = svmModel()
 
-    svm, x_train, y_train, scaler = svmModel()
+    # joblib.dump(svm, 'svm_model.pkl')
+    # joblib.dump(svm2, 'svm2_model.pkl')
+    # joblib.dump(scaler, 'scaler.pkl')
+
+    svm,svm2,scaler = joblib.load('svm_model.pkl'),joblib.load('svm2_model.pkl'),joblib.load('scaler.pkl')
+
+
+
     if plate_image is None:
         print(f"Error: Could not load image from path {plate_image_path}")
     else:
