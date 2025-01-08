@@ -7,7 +7,12 @@ import matplotlib
 import matplotlib.pyplot as plt
 
 
+
+
+
+
 def CaptureFrame_Process(file_path, sample_frequency, save_path):
+
     """
     In this file, you will define your own CaptureFrame_Process funtion. In this function,
     you need three arguments: file_path(str type, the video file), sample_frequency(second), save_path(final results saving path).
@@ -28,20 +33,22 @@ def CaptureFrame_Process(file_path, sample_frequency, save_path):
     frameName = 0
     framesPerSecond = cam.get(cv2.CAP_PROP_FPS)
 
-    interval = int(sample_frequency * framesPerSecond)
+    interval  =  int(sample_frequency*framesPerSecond)
     flag = True
     while (flag):
         cam.set(cv2.CAP_PROP_POS_FRAMES, frameName)
         ret, frame = cam.read()
         if ret:
 
+
             name = str(frameName) + '.jpg'
             print('photo Number: ' + name)
 
             frameName += interval
-            frames.append((frameName, frame))
+            frames.append((frameName,frame))
         else:
             flag = False
+
 
     cam.release()
     # cv2.waitKey(0)
@@ -49,22 +56,22 @@ def CaptureFrame_Process(file_path, sample_frequency, save_path):
     print(frames)
 
     # TODO: Implement actual algorithms for Localizing Plates
-    count = 0
+    count=0
     listaResults = []
     for frameName, frame in frames:
         result = Localization.plate_detection(frame)
         if result[0] is None:
             continue
-        image, x, y, w, h = Localization.plate_detection(frame)
+        image, x,y,w,h=Localization.plate_detection(frame)
         if image is None or image.size == 0:
             continue
-        listaResults.append(Result(frameName, x, y, w, h, frameName / framesPerSecond))
+        listaResults.append(Result(frameName,x,y,w,h, frameName/framesPerSecond))
         # cv2.imshow("Image After Crop", image)
         # cv2.waitKey(0)
         # cv2.destroyAllWindows()
-        plt.imshow(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
-        plt.axis('off')
-        plt.show()
+        # plt.imshow(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
+        # plt.axis('off')
+        # plt.show()
         print(f' Time Stamp (in seconds):{listaResults[count].timeFrame}, x:{listaResults[count].x}, '
               f'y:{listaResults[count].y}, w:{listaResults[count].w}, h:{listaResults[count].h} '
               f'and last but not least frame: {listaResults[count].frameNumber}')
@@ -75,8 +82,9 @@ def CaptureFrame_Process(file_path, sample_frequency, save_path):
 
         # print(type(frame), frame.shape)
 
-        count += 1
-        if (count == 10):
+
+        count+=1
+        if (count==10):
             break
 
     # TODO: Implement actual algorithms for Recognizing Characters
@@ -91,12 +99,11 @@ def CaptureFrame_Process(file_path, sample_frequency, save_path):
 
     pass
 
-
 class Result():
-    def __init__(self, frameNumber, x, y, w, h, timeFrame):
+    def __init__(self, frameNumber, x, y,w,h, timeFrame):
         self.frameNumber = frameNumber
-        self.x = x
-        self.y = y
+        self.x =x
+        self.y =y
         self.w = w
         self.h = h
         self.timeFrame = timeFrame
