@@ -175,7 +175,7 @@ def getHighestAccuracyForEachOneGT(x1, y1, w1, h1, startFrame, endFrame, file_pa
     # plt.show()
 
     #Here can be called image recognition function for characters
-
+    #TODO: problem with None, returns= NOne for some photos
     print(f'Higest accuracy is: {biggestAccuracy}')
     if image is None:
         return biggestAccuracy, None, lastResult
@@ -378,8 +378,8 @@ class plateExpectedActual():
 
 
 if __name__ == "__main__":
-    basePath = "dataset/GT Train/CAT 3"
-    print(f'Average accuarcy: {AccuracyForFullSet(Cat3Train)}')
+    basePath = "dataset/GT Train/CAT 1"
+    print(f'Average accuarcy: {AccuracyForFullSet(Cat1Train)}')
 
 
 
