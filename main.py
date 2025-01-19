@@ -258,6 +258,52 @@ def processJsonGetAccuracy(filePath):
                 accuracy, image,lastResult = getHighestAccuracyForEachOneGT(int(left), int(top), int(width), int(height), start , end, 'dataset/trainingvideo.avi')
     return accuracy,image,lastResult
 
+def addDutchDashes(plate):
+    consecutive = 0
+    dashIndices = []
+
+    for i, char in enumerate(plate):
+        if i > 0:
+            if char.isdigit() and plate[i - 1].isalpha()\
+                    or char.isalpha() and plate[i - 1].isdigit():
+                consecutive = 0
+                dashIndices.append(i)
+
+        if char.isalpha():
+            consecutive += 1
+            if consecutive == 4:
+                dashIndices.append(i-1)
+                consecutive = 2
+        else:
+            consecutive = 0
+
+    if 2 in dashIndices:
+        if 1 in dashIndices:
+            dashIndices.remove(1)
+        if 3 in dashIndices:
+            dashIndices.remove(3)
+
+    if 4 in dashIndices and 5 in dashIndices:
+            dashIndices.remove(5)
+
+    if len(dashIndices) == 1:
+        if 1 not in dashIndices and 2 not in dashIndices and 3 not in dashIndices:
+            dashIndices.append(2)
+        elif 1 in dashIndices or 2 in dashIndices:
+            dashIndices.append(4)
+        else:
+            dashIndices.append(5)
+
+    elif len(dashIndices) == 0:
+        dashIndices.append(2)
+        dashIndices.append(4)
+
+    result = plate
+    dashIndices.sort()
+    for index in reversed(dashIndices):
+        result = result[:index] + "-" + result[index:]
+    return result
+
 # Accuracy for Cat1 Train
 def AccuracyForFullSet(Category):
     sumAccuracy=0
@@ -286,6 +332,7 @@ def AccuracyForFullSet(Category):
         basePath = "dataset/groundTruth_platesFileNames.csv"
         plateStringActual, expectedValue  = plateFullExtraction(image[y:y + h, x:x + w], fileName, basePath,svm,svm2,scaler)
 
+        plateStringActual = addDutchDashes(plateStringActual)
         print(f'True value: {expectedValue}, Extracted value: {plateStringActual}')
 
         currentRecognitionAccuracy = stringAccuracy(expectedValue,plateStringActual)
@@ -305,25 +352,20 @@ def AccuracyForFullSet(Category):
 from collections import Counter
 
 def stringAccuracy(string1, string2):
-    string1= string1.replace('-','')
     if not isinstance(string1, str):
         string1 = str(string1)
     if not isinstance(string2, str):
         string2 = str(string2)
-    if len(string1) == 0 or len(string2) == 0:
+
+    length = len(string1)
+
+    if length != len(string2) or len == 0:
         return 0.0
 
-    c1 = Counter(string1)
-    c2 = Counter(string2)
+    correct_matches = sum(1 for i in range(len(string1)) if string1[i] == string2[i])
 
-    common_chars = 0
-    for char in c1:
-        common_chars += min(c1[char], c2.get(char, 0))
-
-
-    accuracy = (common_chars / len(string1)) * 100
+    accuracy = (correct_matches / length) * 100
     return accuracy
-
 
 
 def plateFullExtraction(image,fileName,basePath,svm,svm2,scaler):
