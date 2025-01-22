@@ -591,6 +591,7 @@ def processEachDL(image, epsilon, k1, k2, ratioStandard, ratioMax, heighConstant
         height, width = imageInverted.shape[:2]
         MAX_AREA = height * width
     print(f'Max Area: {MAX_AREA}')
+    contours = sorted(contours, key=lambda c: cv2.boundingRect(c)[0])
     for contour in contours:
         area = cv2.contourArea(contour)
 
