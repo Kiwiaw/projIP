@@ -79,6 +79,8 @@ def applyMask(image, lower, upper):
 
     mask = cv2.inRange(image, lower, upper)
 
+    image = cv2.bitwise_and(image, image, mask=mask)
+
     return cropPlate(image, mask,0.6,1.1,.5)
 
 
