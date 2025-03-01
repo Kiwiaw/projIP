@@ -1,5 +1,7 @@
 import cv2
 import os
+
+import joblib
 import pandas as pd
 import Localization
 import Recognize
@@ -44,8 +46,9 @@ def CaptureFrame_Process(file_path, sample_frequency, save_path):
             name = str(frameName) + '.jpg'
             print('photo Number: ' + name)
 
-            frameName += interval
+
             frames.append((frameName,frame))
+            frameName += interval
         else:
             flag = False
 
@@ -55,49 +58,55 @@ def CaptureFrame_Process(file_path, sample_frequency, save_path):
     # cv2.destroyAllWindows()
     print(frames)
 
+
+
+    svm, svm2, scaler = joblib.load('svm2_model.pkl'), joblib.load('svm2_model.pkl'), joblib.load('scaler.pkl')
+    print('Models loaded !<3')
+
     # TODO: Implement actual algorithms for Localizing Plates
+    # TODO: UNCOMMENT IF U WANT TO WORK HERE
     count=0
     listaResults = []
+    plates = []
     for frameName, frame in frames:
         result = Localization.plate_detection(frame)
-        if result[0] is None:
+        if not result or result[0] is None:
             continue
-        image, x,y,w,h=Localization.plate_detection(frame)
-        if image is None or image.size == 0:
-            continue
-        listaResults.append(Result(frameName,x,y,w,h, frameName/framesPerSecond))
-        # cv2.imshow("Image After Crop", image)
-        # cv2.waitKey(0)
-        # cv2.destroyAllWindows()
-        # plt.imshow(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
-        # plt.axis('off')
-        # plt.show()
-        print(f' Time Stamp (in seconds):{listaResults[count].timeFrame}, x:{listaResults[count].x}, '
-              f'y:{listaResults[count].y}, w:{listaResults[count].w}, h:{listaResults[count].h} '
-              f'and last but not least frame: {listaResults[count].frameNumber}')
+        result = Localization.plate_detection(frame)
+        for r in result:
+            plateCropped = r.croppedImage
+            plateText = Recognize.segment_and_recognize(plateCropped, svm, svm2, scaler)
+            showImage(plateCropped)
 
-        # frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        # plt.imshow(frame)
-        # plt.show()
+            plates.append((plateText, frameName, frameName / framesPerSecond))
+
+
+
 
         # print(type(frame), frame.shape)
 
 
         count+=1
-        if (count==10):
-            break
+        # if (count==10):
+        #     break
 
-    # TODO: Implement actual algorithms for Recognizing Characters
+
 
     output = open(save_path, "w")
     output.write("License plate,Frame no.,Timestamp(seconds)\n")
 
-    # TODO: REMOVE THESE (below) and write the actual values in `output`
-    output.write("XS-NB-23,34,1.822\n")
-    # output.write("YOUR,STUFF,HERE\n")
-    # TODO: REMOVE THESE (above) and write the actual values in `output`
+
+    # output.write("XS-NB-23,34,1.822\n")
+    for plateText, frameNo, timestamp in plates:
+        output.write(f"{plateText},Frame number is-{frameNo}, timestamp: {timestamp:.3f}\n")
 
     pass
+
+
+def showImage(image):
+    # image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    plt.imshow(image)
+    plt.show()
 
 class Result():
     def __init__(self, frameNumber, x, y,w,h, timeFrame):
@@ -125,3 +134,5 @@ class Result():
 
     def getTimeFrame(self):
         return self.timeFrame
+
+

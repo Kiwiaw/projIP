@@ -547,7 +547,11 @@ def processEachDL(image, epsilon, k1, k2, ratioStandard, ratioMax, heighConstant
     listaChars = []
 
     # We convert RGB->Gray
-    imgGray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
+    # imgGray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
+    if len(image.shape) > 2 and image.shape[2] > 1:
+        imgGray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
+    else:
+        imgGray = image.copy()
 
     # LAST
     # plt.imshow(cv2.cvtColor(imgGray, cv2.COLOR_BGR2RGB))

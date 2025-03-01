@@ -38,7 +38,8 @@ if __name__ == '__main__':
         output_path = args.output_path
     file_path = args.file_path
     sample_frequency = args.sample_frequency
-# CaptureFrame_Process.CaptureFrame_Process(file_path, sample_frequency, output_path)
+    basePath = "dataset/GT Train/CAT 1"
+    CaptureFrame_Process.CaptureFrame_Process(file_path, sample_frequency, output_path)
 #
 
 
@@ -419,9 +420,9 @@ class plateExpectedActual():
 
 
 
-if __name__ == "__main__":
-    basePath = "dataset/GT Train/CAT 1"
-    print(f'Average accuarcy: {AccuracyForFullSet(Cat1Train)}')
-
+# if __name__ == "__main__":
+#     basePath = "dataset/GT Train/CAT 1"
+#     print(f'Average accuarcy: {AccuracyForFullSet(Cat1Train)}')
+# #
 
 
