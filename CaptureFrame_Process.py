@@ -40,9 +40,8 @@ def CaptureFrame_Process(file_path, sample_frequency, save_path):
     while (flag):
         cam.set(cv2.CAP_PROP_POS_FRAMES, frameName)
         ret, frame = cam.read()
+
         if ret:
-
-
             name = str(frameName) + '.jpg'
             print('photo Number: ' + name)
 
@@ -72,23 +71,11 @@ def CaptureFrame_Process(file_path, sample_frequency, save_path):
         result = Localization.plate_detection(frame)
         if not result or result[0] is None:
             continue
-        result = Localization.plate_detection(frame)
-        for r in result:
-            plateCropped = r.croppedImage
-            plateText = Recognize.segment_and_recognize(plateCropped, svm, svm2, scaler)
-            showImage(plateCropped)
 
-            plates.append((plateText, frameName, frameName / framesPerSecond))
+        plateCropped = result[0].croppedImage
+        plateText = Recognize.segment_and_recognize(plateCropped, svm, svm2, scaler)
 
-
-
-
-        # print(type(frame), frame.shape)
-
-
-        count+=1
-        # if (count==10):
-        #     break
+        plates.append((plateText, frameName, frameName / framesPerSecond))
 
 
 
@@ -98,7 +85,7 @@ def CaptureFrame_Process(file_path, sample_frequency, save_path):
 
     # output.write("XS-NB-23,34,1.822\n")
     for plateText, frameNo, timestamp in plates:
-        output.write(f"{plateText},Frame number is-{frameNo}, timestamp: {timestamp:.3f}\n")
+        output.write(f"{plateText},{frameNo}, {timestamp:.3f}\n")
 
     pass
 
