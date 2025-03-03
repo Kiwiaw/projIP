@@ -40,7 +40,7 @@ if __name__ == '__main__':
     sample_frequency = args.sample_frequency
     basePath = "dataset/GT Train/CAT 1"
     CaptureFrame_Process.CaptureFrame_Process(file_path, sample_frequency, output_path)
-#
+
 
 
 
@@ -311,6 +311,7 @@ def makeDucthPlate(plate):
     replacements = {
         'B': '8', '8': 'B',
         'S': '5', '5': 'S',
+        'S': '6', '6': 'S',
         'O': '0', '0': 'O'
     }
 
