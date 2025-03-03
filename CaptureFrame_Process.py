@@ -30,7 +30,7 @@ def CaptureFrame_Process(file_path, sample_frequency, save_path):
     Output: None
     """
 
-    # TODO: Read frames from the video (saved at `file_path`) by making use of `sample_frequency`
+#TODO: Read frames from the video (saved at file_path) by making use of sample_frequency
     frames = []
     cam = cv2.VideoCapture(file_path)
     frameName = 0
@@ -63,8 +63,8 @@ def CaptureFrame_Process(file_path, sample_frequency, save_path):
     svm, svm2, scaler = joblib.load('svm2_model.pkl'), joblib.load('svm2_model.pkl'), joblib.load('scaler.pkl')
     print('Models loaded !<3')
 
-    # TODO: Implement actual algorithms for Localizing Plates
-    # TODO: UNCOMMENT IF U WANT TO WORK HERE
+    #TODO: Implement actual algorithms for Localizing Plates
+    #TODO: UNCOMMENT IF U WANT TO WORK HERE
     count=0
     listaResults = []
     plates = []
@@ -94,7 +94,7 @@ def CaptureFrame_Process(file_path, sample_frequency, save_path):
             plateTexts.append(currentText)
         else:
             plateText = majorityVoting(plateTexts)
-            plateTexts = []
+            plateTexts = [currentText]
             if plateText:
                 plateText = makeDucthPlate(plateText)
                 plates.append((addDutchDashes(plateText), timestamp, timestamp / framesPerSecond))
@@ -105,12 +105,19 @@ def CaptureFrame_Process(file_path, sample_frequency, save_path):
         previousText = currentText
 
 
-    output = open(save_path, "w")
-    output.write("License plate,Frame no.,Timestamp(seconds)\n")
+    # output = open(save_path, "w")
+    # output.write("License plate,Frame no.,Timestamp(seconds)\n")
 
-    for plateText, frameNo, timestamp in plates:
-        output.write(f"{plateText},{frameNo}, {timestamp:.3f}\n")
-    pass
+    plateText = majorityVoting(plateTexts)
+    if plateText:
+        formatted_plate = addDutchDashes(makeDucthPlate(plateText))
+        plates.append((formatted_plate, timestamp, timestamp / framesPerSecond))
+
+    with open(save_path, "w") as output:
+        output.write("License plate,Frame no.,Timestamp(seconds)\n")
+        for plateText, frameNo, timestamp in plates:
+            output.write(f"{plateText},{frameNo},{timestamp:.3f}\n")
+
 
 # plateLength is the length of the text  of the plate
 def majorityVoting(strings, plateLength=6):
@@ -180,7 +187,7 @@ def showImage(image):
     plt.show()
 
 class Result():
-    def __init__(self, frameNumber, x, y,w,h, timeFrame):
+    def _init_(self, frameNumber, x, y,w,h, timeFrame):
         self.frameNumber = frameNumber
         self.x =x
         self.y =y
@@ -205,5 +212,3 @@ class Result():
 
     def getTimeFrame(self):
         return self.timeFrame
-
-
