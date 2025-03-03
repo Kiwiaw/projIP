@@ -71,6 +71,7 @@ def CaptureFrame_Process(file_path, sample_frequency, save_path):
     previousPlate = None
     plateTexts = []
     previousText = ""
+    timestamp = 0
 
     for frameName, frame in frames:
         # plt.title("frame")
@@ -96,7 +97,9 @@ def CaptureFrame_Process(file_path, sample_frequency, save_path):
             plateTexts = []
             if plateText:
                 plateText = makeDucthPlate(plateText)
-                plates.append((addDutchDashes(plateText), frameName - interval, frameName / framesPerSecond))
+                plates.append((addDutchDashes(plateText), timestamp, timestamp / framesPerSecond))
+
+            timestamp = frameName
 
         previousPlate = currentPlate
         previousText = currentText
