@@ -81,7 +81,7 @@ def augmentationImages(original_image_name,image, label, output_dir, label_file,
 
             cleaned_image = clean_image(centered_image)
 
-            output_filename = f"{original_image_name}_aug_{i}.bmp"  # Save as BMP
+            output_filename = f"{original_image_name}_aug_{i}.bmp"
             output_path = os.path.join(output_dir, output_filename)
             cv2.imwrite(output_path, cleaned_image)
 

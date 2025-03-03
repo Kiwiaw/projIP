@@ -24,7 +24,7 @@ def get_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--file_path', type=str, default='dataset/trainingvideo.avi')
     parser.add_argument('--output_path', type=str, default='dataset/Output.csv')
-    parser.add_argument('--sample_frequency', type=int, default=2)
+    parser.add_argument('--sample_frequency', type=int, default=1/2)
     args = parser.parse_args()
     return args
 
@@ -38,7 +38,8 @@ if __name__ == '__main__':
         output_path = args.output_path
     file_path = args.file_path
     sample_frequency = args.sample_frequency
-# CaptureFrame_Process.CaptureFrame_Process(file_path, sample_frequency, output_path)
+    basePath = "dataset/GT Train/CAT 1"
+    CaptureFrame_Process.CaptureFrame_Process(file_path, sample_frequency, output_path)
 #
 
 
@@ -304,6 +305,36 @@ def addDutchDashes(plate):
         result = result[:index] + "-" + result[index:]
     return result
 
+def makeDucthPlate(plate):
+    if isDutchPlate(plate):
+        return plate
+    replacements = {
+        'B': '8', '8': 'B',
+        'S': '5', '5': 'S',
+        'O': '0', '0': 'O'
+    }
+
+    for i, char in enumerate(plate):
+        if char in replacements:
+            variation = plate[:i] + replacements[char] + plate[i + 1:]
+            if isDutchPlate(variation):
+                return variation
+
+    return plate
+
+
+def isDutchPlate(plate):
+    allFormats = ["XX99XX", "XXXX99", "99XXXX", "99XXX9", "9XXX99", "XX999X", "X999XX", "XXX99X", "XXX99X", "X99XXX",
+                  "9XX999", "999XX9"]
+    result = ''
+    for char in plate:
+        if char.isalpha():
+            result += 'X'
+        elif char.isdigit():
+            result += '9'
+
+    return result in allFormats
+
 # Accuracy for Cat1 Train
 def AccuracyForFullSet(Category):
     sumAccuracy=0
@@ -419,9 +450,9 @@ class plateExpectedActual():
 
 
 
-if __name__ == "__main__":
-    basePath = "dataset/GT Train/CAT 1"
-    print(f'Average accuarcy: {AccuracyForFullSet(Cat1Train)}')
-
+# if __name__ == "__main__":
+#     basePath = "dataset/GT Train/CAT 1"
+#     print(f'Average accuarcy: {AccuracyForFullSet(Cat1Train)}')
+# #
 
 

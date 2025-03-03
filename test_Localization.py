@@ -1,7 +1,11 @@
+from collections import Counter
+from itertools import product
 from unittest import TestCase
 import cv2
+
+from CaptureFrame_Process import majorityVoting
 from Localization import plate_detection
-from main import addDutchDashes
+from main import addDutchDashes, isDutchPlate
 
 
 # class TestPlateDetection(TestCase):
@@ -40,3 +44,11 @@ from main import addDutchDashes
 #     except AssertionError:
 #         print(f"Expected format: {platesGT[i]}")
 #         print(f"Result after addDutchDashes: {addDutchDashes(plate)}\n")
+
+
+
+str = "jghrex"
+str2 = "hboex"
+strings = ["34IS14", "34I61T","34I614", "34I6TT"]
+print(majorityVoting(strings))
+print(isDutchPlate("34IS14"))
