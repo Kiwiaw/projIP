@@ -75,12 +75,11 @@ def whiteMask(image):
    return applyMask(image, lower, upper)
 
 def applyMask(image, lower, upper):
-    image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+    image_hue = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
 
-    mask = cv2.inRange(image, lower, upper)
+    mask = cv2.inRange(image_hue, lower, upper)
 
-
-    return cropPlate(image, mask,0.6,1.1,.5)
+    return cropPlate(image, mask,0.6,1.1,.4)
 
 
 def cropPlate(image, mask, k1, k2, ratioFix):
