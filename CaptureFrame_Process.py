@@ -7,10 +7,9 @@ import Localization
 import Recognize
 import matplotlib
 import matplotlib.pyplot as plt
+from collections import defaultdict, Counter
 
-
-
-
+from main import addDutchDashes
 
 
 def CaptureFrame_Process(file_path, sample_frequency, save_path):
@@ -67,28 +66,85 @@ def CaptureFrame_Process(file_path, sample_frequency, save_path):
     count=0
     listaResults = []
     plates = []
+    previousPlate = None
+    plateTexts = []
+    previousText = ""
+
     for frameName, frame in frames:
         result = Localization.plate_detection(frame)
         if not result or result[0] is None:
             continue
 
-        plateCropped = result[0].croppedImage
-        plateText = Recognize.segment_and_recognize(plateCropped, svm, svm2, scaler)
+        currentPlate = result[0]
+        currentText = Recognize.segment_and_recognize(currentPlate.croppedImage, svm, svm2, scaler)
 
-        plates.append((plateText, frameName, frameName / framesPerSecond))
+        if samePlate(currentPlate, previousPlate, currentText, previousText):
+            plateTexts.append(currentText)
+        else:
+            plateText = majorityVoting(plateTexts)
+            plateTexts = []
+            if plateText: plates.append((addDutchDashes(plateText), frameName, frameName / framesPerSecond))
 
+        previousPlate = currentPlate
+        previousText = currentText
 
 
     output = open(save_path, "w")
     output.write("License plate,Frame no.,Timestamp(seconds)\n")
 
-
-    # output.write("XS-NB-23,34,1.822\n")
     for plateText, frameNo, timestamp in plates:
         output.write(f"{plateText},{frameNo}, {timestamp:.3f}\n")
-
     pass
 
+# plateLength is the length of the text  of the plate
+def majorityVoting(plateTexts, plateLength = 6):
+    if not plateTexts:
+        return ""
+
+    plateTexts = [s for s in plateTexts if len(s) == plateLength]
+    if not plateTexts:
+        return ""
+
+    result = []
+    for i in range(plateLength):
+        char_counts = Counter(s[i] for s in plateTexts)
+        majority_char = max(char_counts, key=char_counts.get)
+        result.append(majority_char)
+
+    return "".join(result)
+
+def samePlate(current, previous, currentText, previousText):
+    if previous is None:
+        return False
+
+    def intersectionOverBiggerArea(x1, y1, w1, h1, x2, y2, w2, h2, commonArea=0.70):
+        x_overlap = max(0, min(x1 + w1, x2 + w2) - max(x1, x2))
+        y_overlap = max(0, min(y1 + h1, y2 + h2) - max(y1, y2))
+
+        intersection = x_overlap * y_overlap
+        biggerArea = max(w1 * h1, w2 * h2)
+        return intersection / biggerArea >= commonArea
+
+    def haveCommonChars(s1: str, s2: str, count=3) -> bool:
+        difference_count = defaultdict(int)
+
+        char_indices_str2 = defaultdict(list)
+        for idx, char in enumerate(s2):
+            char_indices_str2[char].append(idx)
+
+        for i, char in enumerate(s1):
+            if char in char_indices_str2:
+                for j in char_indices_str2[char]:
+                    diff = i - j
+                    difference_count[diff] += 1
+
+                    if difference_count[diff] >= count:
+                        return True
+
+        return False
+
+    return (haveCommonChars(currentText, previousText) or
+            intersectionOverBiggerArea(current.x, current.y, current.w, current.h, previous.x, previous.y, previous.w, previous.h))
 
 def showImage(image):
     # image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)

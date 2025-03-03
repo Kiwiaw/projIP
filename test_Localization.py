@@ -1,5 +1,7 @@
 from unittest import TestCase
 import cv2
+
+from CaptureFrame_Process import majorityVoting
 from Localization import plate_detection
 from main import addDutchDashes
 
@@ -40,3 +42,8 @@ from main import addDutchDashes
 #     except AssertionError:
 #         print(f"Expected format: {platesGT[i]}")
 #         print(f"Result after addDutchDashes: {addDutchDashes(plate)}\n")
+
+str = "jghrex"
+str2 = "hboex"
+strings = ["ter", "xev","xel"]
+print(majorityVoting(strings, plateLength=3))
