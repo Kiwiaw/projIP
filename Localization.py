@@ -79,7 +79,7 @@ def applyMask(image, lower, upper):
 
     mask = cv2.inRange(image_hue, lower, upper)
 
-    return cropPlate(image, mask,0.6,1.1,.5)
+    return cropPlate(image, mask,0.6,1.1,.4)
 
 
 def cropPlate(image, mask, k1, k2, ratioFix):

@@ -305,6 +305,36 @@ def addDutchDashes(plate):
         result = result[:index] + "-" + result[index:]
     return result
 
+def makeDucthPlate(plate):
+    if isDutchPlate(plate):
+        return plate
+    replacements = {
+        'B': '8', '8': 'B',
+        'S': '5', '5': 'S',
+        'O': '0', '0': 'O'
+    }
+
+    for i, char in enumerate(plate):
+        if char in replacements:
+            variation = plate[:i] + replacements[char] + plate[i + 1:]
+            if isDutchPlate(variation):
+                return variation
+
+    return plate
+
+
+def isDutchPlate(plate):
+    allFormats = ["XX99XX", "XXXX99", "99XXXX", "99XXX9", "9XXX99", "XX999X", "X999XX", "XXX99X", "XXX99X", "X99XXX",
+                  "9XX999", "999XX9"]
+    result = ''
+    for char in plate:
+        if char.isalpha():
+            result += 'X'
+        elif char.isdigit():
+            result += '9'
+
+    return result in allFormats
+
 # Accuracy for Cat1 Train
 def AccuracyForFullSet(Category):
     sumAccuracy=0

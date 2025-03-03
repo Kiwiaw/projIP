@@ -1,3 +1,5 @@
+from itertools import product
+
 import cv2
 import os
 
@@ -9,7 +11,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 from collections import defaultdict, Counter
 
-from main import addDutchDashes
+from main import addDutchDashes, makeDucthPlate, isDutchPlate
 
 
 def CaptureFrame_Process(file_path, sample_frequency, save_path):
@@ -71,6 +73,9 @@ def CaptureFrame_Process(file_path, sample_frequency, save_path):
     previousText = ""
 
     for frameName, frame in frames:
+        # plt.title("frame")
+        # showImage(frame)
+
         result = Localization.plate_detection(frame)
         if not result or result[0] is None:
             continue
@@ -78,12 +83,20 @@ def CaptureFrame_Process(file_path, sample_frequency, save_path):
         currentPlate = result[0]
         currentText = Recognize.segment_and_recognize(currentPlate.croppedImage, svm, svm2, scaler)
 
+        plt.title("current")
+        showImage(currentPlate.croppedImage)
+        # if previousPlate:
+            # plt.title("previous")
+            # showImage(previousPlate.croppedImage)
+
         if samePlate(currentPlate, previousPlate, currentText, previousText):
             plateTexts.append(currentText)
         else:
             plateText = majorityVoting(plateTexts)
             plateTexts = []
-            if plateText: plates.append((addDutchDashes(plateText), frameName, frameName / framesPerSecond))
+            if plateText:
+                plateText = makeDucthPlate(plateText)
+                plates.append((addDutchDashes(plateText), frameName - interval, frameName / framesPerSecond))
 
         previousPlate = currentPlate
         previousText = currentText
@@ -97,21 +110,33 @@ def CaptureFrame_Process(file_path, sample_frequency, save_path):
     pass
 
 # plateLength is the length of the text  of the plate
-def majorityVoting(plateTexts, plateLength = 6):
-    if not plateTexts:
+def majorityVoting(strings, plateLength=6):
+    if not strings:
         return ""
 
-    plateTexts = [s for s in plateTexts if len(s) == plateLength]
-    if not plateTexts:
+    strings = [s for s in strings if len(s) == plateLength]
+    if not strings:
         return ""
 
-    result = []
-    for i in range(plateLength):
-        char_counts = Counter(s[i] for s in plateTexts)
-        majority_char = max(char_counts, key=char_counts.get)
-        result.append(majority_char)
+    length = 6
 
-    return "".join(result)
+    allCandidates = []
+    for i in range(length):
+        charCounts = Counter(s[i] for s in strings)
+        totalVotes = sum(charCounts.values())
+
+        candidates = [char for char, count in charCounts.items() if count / totalVotes >= 0.2]
+
+        if not candidates:
+            candidates.append(max(charCounts, key=charCounts.get))
+
+        allCandidates.append(candidates)
+
+    for combination in product(*allCandidates):
+        plate = "".join(combination)
+        if isDutchPlate(plate):
+            return plate
+    return "".join(max(Counter(s[i] for s in strings), key=Counter(s[i] for s in strings).get) for i in range(length))
 
 def samePlate(current, previous, currentText, previousText):
     if previous is None:
