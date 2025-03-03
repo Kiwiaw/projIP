@@ -83,8 +83,8 @@ def CaptureFrame_Process(file_path, sample_frequency, save_path):
         currentPlate = result[0]
         currentText = Recognize.segment_and_recognize(currentPlate.croppedImage, svm, svm2, scaler)
 
-        plt.title("current")
-        showImage(currentPlate.croppedImage)
+        # plt.title("current")
+        # showImage(currentPlate.croppedImage)
         # if previousPlate:
             # plt.title("previous")
             # showImage(previousPlate.croppedImage)
