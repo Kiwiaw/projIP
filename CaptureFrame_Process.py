@@ -74,15 +74,31 @@ def CaptureFrame_Process(file_path, sample_frequency, save_path):
     timestamp = 0
 
     for frameName, frame in frames:
-        # plt.title("frame")
-        # showImage(frame)
-
         result = Localization.plate_detection(frame)
         if not result or result[0] is None:
             continue
 
-        currentPlate = result[0]
-        currentText = Recognize.segment_and_recognize(currentPlate.croppedImage, svm, svm2, scaler)
+        candidates = []
+        for contour in result:
+            candidate = Recognize.segment_and_recognize(contour.croppedImage, svm, svm2, scaler)
+            if len(candidate) == 6:
+                candidates.append((contour, candidate))
+        if candidates:
+            found = False
+            if(len(candidates) > 1):
+                for contour, candidate in candidates:
+                    if isDutchPlate(candidate):
+                        currentPlate = contour
+                        currentText = candidate
+                        found = True
+                        break
+
+            if(not found):
+                currentPlate = candidates[0][0]
+                currentText = candidates[0][1]
+        else:
+            currentPlate = result[0]
+            currentText = Recognize.segment_and_recognize(contour.croppedImage, svm, svm2, scaler)
 
         # plt.title("current")
         # showImage(currentPlate.croppedImage)
