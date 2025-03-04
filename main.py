@@ -312,7 +312,8 @@ def makeDucthPlate(plate):
         'B': '8', '8': 'B',
         'O': '0', '0': 'O',
         'S': '5', '5': 'S',
-        'S': '6', '6': 'S'
+        'S': '6', '6': 'S',
+        'D': '0', '0': 'D'
     }
 
     for i, char in enumerate(plate):
