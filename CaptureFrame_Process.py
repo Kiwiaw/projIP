@@ -110,8 +110,10 @@ def CaptureFrame_Process(file_path, sample_frequency, save_path):
 
     plateText = majorityVoting(plateTexts)
     if plateText:
-        formatted_plate = addDutchDashes(makeDucthPlate(plateText))
-        plates.append((formatted_plate, timestamp, timestamp / framesPerSecond))
+        plateText = addDutchDashes(makeDucthPlate(plateText))
+        plates.append((plateText, timestamp, timestamp / framesPerSecond))
+
+    plates = removeDuplicates(plates)
 
     with open(save_path, "w") as output:
         output.write("License plate,Frame no.,Timestamp(seconds)\n")
@@ -148,6 +150,24 @@ def majorityVoting(strings, plateLength=6):
             return plate
     return "".join(max(Counter(s[i] for s in strings), key=Counter(s[i] for s in strings).get) for i in range(length))
 
+def haveCommonChars(s1: str, s2: str, count=3) -> bool:
+    difference_count = defaultdict(int)
+
+    char_indices_str2 = defaultdict(list)
+    for idx, char in enumerate(s2):
+        char_indices_str2[char].append(idx)
+
+    for i, char in enumerate(s1):
+        if char in char_indices_str2:
+            for j in char_indices_str2[char]:
+                diff = i - j
+                difference_count[diff] += 1
+
+                if difference_count[diff] >= count:
+                    return True
+
+    return False
+
 def samePlate(current, previous, currentText, previousText):
     if previous is None:
         return False
@@ -160,26 +180,21 @@ def samePlate(current, previous, currentText, previousText):
         biggerArea = max(w1 * h1, w2 * h2)
         return intersection / biggerArea >= commonArea
 
-    def haveCommonChars(s1: str, s2: str, count=3) -> bool:
-        difference_count = defaultdict(int)
-
-        char_indices_str2 = defaultdict(list)
-        for idx, char in enumerate(s2):
-            char_indices_str2[char].append(idx)
-
-        for i, char in enumerate(s1):
-            if char in char_indices_str2:
-                for j in char_indices_str2[char]:
-                    diff = i - j
-                    difference_count[diff] += 1
-
-                    if difference_count[diff] >= count:
-                        return True
-
-        return False
 
     return (haveCommonChars(currentText, previousText) or
             intersectionOverBiggerArea(current.x, current.y, current.w, current.h, previous.x, previous.y, previous.w, previous.h))
+
+def removeDuplicates(strings: list[str], count=4) -> list[str]:
+    if not strings:
+        return []
+
+    result = [strings[0]]
+
+    for i in range(1, len(strings)):
+        if not haveCommonChars(strings[i][0], strings[i - 1][0], count=count):
+            result.append(strings[i])
+
+    return result
 
 def showImage(image):
     # image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
