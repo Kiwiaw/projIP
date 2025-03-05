@@ -553,28 +553,16 @@ def processEachDL(image, epsilon, k1, k2, ratioStandard, ratioMax, heighConstant
     else:
         imgGray = image.copy()
 
-    # LAST
-    # plt.imshow(cv2.cvtColor(imgGray, cv2.COLOR_BGR2RGB))
-    # plt.title(f'Gray image')
-    # plt.axis('off')
-    # plt.show()
-
     # separatin into a binary image
     image = isodata_thresholding(imgGray, epsilon)
     # inverting so letter/digits are white the plate is black
     imageInverted = 255 - image
 
-    # LAST
-    # plt.imshow(cv2.cvtColor(imageInverted,cv2.COLOR_GRAY2RGB))
-    # plt.title('Green')
-    # plt.axis('off')
-    # plt.show()
-
     # Calculate an area of the image so then we can use that to discard not valid contours
     height, width = image.shape[:2]
     MAX_AREA = height * width
 
-    #
+
 
     # Now if we have find countours for each digit
     contours, _ = cv2.findContours(imageInverted, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -587,11 +575,7 @@ def processEachDL(image, epsilon, k1, k2, ratioStandard, ratioMax, heighConstant
 
         imageInverted = findEdges(imgGray)
         contours, _ = cv2.findContours(imageInverted, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        # LAST
-        # plt.imshow(cv2.cvtColor(imageInverted, cv2.COLOR_GRAY2RGB))
-        # plt.title(f'AFTER Edges doesnt count lol + len of contours  {len(contours)}')
-        # plt.axis('off')
-        # plt.show()
+
         height, width = imageInverted.shape[:2]
         MAX_AREA = height * width
     print(f'Max Area: {MAX_AREA}')
@@ -640,15 +624,6 @@ def processEachDL(image, epsilon, k1, k2, ratioStandard, ratioMax, heighConstant
             imageCropped = imageInverted[y:y + h, x:x + w]
             listaChars.append(imageCropped)
 
-            # visualization LAST
-            # plt.imshow(cv2.cvtColor(imageCropped, cv2.COLOR_GRAY2RGB))
-            # plt.title(f'{area}')
-            # plt.axis('off')
-            # plt.show()
-
-    # plt.title('Green')
-    # plt.axis('off')
-    # plt.show()
     return listaChars
 
 
