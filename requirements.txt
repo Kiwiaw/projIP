@@ -10,5 +10,7 @@ scikit-learn
 pandas
 opencv-python
 # moviepy
+joblib
+albumentations
 
 

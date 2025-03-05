@@ -1,3 +1,7 @@
+#How to use?
+insert a video path and output file in  get_args method in main. The output will be then stored in 
+output file.
+
 # License plate recognition template
 
 This is the base template for the License Plate Recognition project from the CSE2225 Image Processing course.

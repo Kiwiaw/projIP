@@ -228,7 +228,7 @@ def divideIntoSets():
     Cat4Test = Cat4[int(splitFactor * len(Cat4)):]
     return Cat1Train, Cat1Test, Cat2Train, Cat2Test,Cat3Train, Cat3Test,Cat4Train, Cat4Test
 
-Cat1Train, Cat1Test, Cat2Train, Cat2Test,Cat3Train, Cat3Test,Cat4Train, Cat4Test=divideIntoSets()
+# Cat1Train, Cat1Test, Cat2Train, Cat2Test,Cat3Train, Cat3Test,Cat4Train, Cat4Test=divideIntoSets()
 
 #chg
 def processJsonGetAccuracy(filePath):
