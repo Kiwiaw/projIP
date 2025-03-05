@@ -188,17 +188,7 @@ def samePlate(current, previous, currentText, previousText):
     if previous is None:
         return False
 
-    def intersectionOverBiggerArea(x1, y1, w1, h1, x2, y2, w2, h2, commonArea=0.70):
-        x_overlap = max(0, min(x1 + w1, x2 + w2) - max(x1, x2))
-        y_overlap = max(0, min(y1 + h1, y2 + h2) - max(y1, y2))
-
-        intersection = x_overlap * y_overlap
-        biggerArea = max(w1 * h1, w2 * h2)
-        return intersection / biggerArea >= commonArea
-
-
-    return (haveCommonChars(currentText, previousText) or
-            intersectionOverBiggerArea(current.x, current.y, current.w, current.h, previous.x, previous.y, previous.w, previous.h))
+    return (haveCommonChars(currentText, previousText))
 
 def removeDuplicates(strings: list[str], count=4) -> list[str]:
     if not strings:
