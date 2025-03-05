@@ -219,7 +219,6 @@ def svmModel(compareSize=(64, 64), n_neighbors=7, knnDistance=False, useHog=True
                     imagePath = os.path.join(augmentedDir, imageName)
                     directoryToTravel[len(directoryToTravel) + 1] = (imagePath, label)
 
-    print(directoryToTravel)
 
     shuffled_items = list(directoryToTravel.items())
     random.shuffle(shuffled_items)
@@ -578,7 +577,6 @@ def processEachDL(image, epsilon, k1, k2, ratioStandard, ratioMax, heighConstant
 
         height, width = imageInverted.shape[:2]
         MAX_AREA = height * width
-    print(f'Max Area: {MAX_AREA}')
     contours = sorted(contours, key=lambda c: cv2.boundingRect(c)[0])
     for contour in contours:
         area = cv2.contourArea(contour)
@@ -595,7 +593,6 @@ def processEachDL(image, epsilon, k1, k2, ratioStandard, ratioMax, heighConstant
             # plt.show()
             pass
 
-        print(f'contour Are: {areaHere}')
         # if this contour is too big we discard it
 
         if (True):

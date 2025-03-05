@@ -93,7 +93,6 @@ def fetchStartEndGTFrameValues(file_path, startFrame, endFrame,x1, y1, w1, h1):
         ret, frame = cam.read()
         if ret:
             name = str(currentFrame) + '.jpg'
-            print('photo Number: ' + name)
             frames.append((currentFrame, frame))
         else:
             break
