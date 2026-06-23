@@ -17,8 +17,8 @@ run_main:
   stage: run
   script:
     - echo "Running main!"
-    - input_file="./dataset/pipeline/shorterVideo.avi"    # TODO: Comment out this line if you want to run the pipeline on longer video and
-    # - input_file="./dataset/trainingvideo.avi"          # TODO: Uncomment this line to run on full training video (NOTE: Only uncomment this line when you really want to test final video, this significantly slows down pipeline)
+#    - input_file="./dataset/pipeline/shorterVideo.avi"    # TODO: Comment out this line if you want to run the pipeline on longer video and
+    - input_file="./dataset/trainingvideo.avi"          # TODO: Uncomment this line to run on full training video (NOTE: Only uncomment this line when you really want to test final video, this significantly slows down pipeline)
     - python3 main.py --file_path $input_file --output_path ./Output.csv
   artifacts:
     paths:

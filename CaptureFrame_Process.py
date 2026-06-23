@@ -1,13 +1,21 @@
+from itertools import product
+
 import cv2
 import os
+
+import joblib
 import pandas as pd
 import Localization
 import Recognize
 import matplotlib
 import matplotlib.pyplot as plt
+from collections import defaultdict, Counter
+
+from main import addDutchDashes, makeDucthPlate, isDutchPlate
 
 
 def CaptureFrame_Process(file_path, sample_frequency, save_path):
+
     """
     In this file, you will define your own CaptureFrame_Process funtion. In this function,
     you need three arguments: file_path(str type, the video file), sample_frequency(second), save_path(final results saving path).
@@ -22,81 +30,188 @@ def CaptureFrame_Process(file_path, sample_frequency, save_path):
     Output: None
     """
 
-    # TODO: Read frames from the video (saved at `file_path`) by making use of `sample_frequency`
+#TODO: Read frames from the video (saved at file_path) by making use of sample_frequency
     frames = []
     cam = cv2.VideoCapture(file_path)
     frameName = 0
     framesPerSecond = cam.get(cv2.CAP_PROP_FPS)
 
-    interval = int(sample_frequency * framesPerSecond)
+    interval  =  int(sample_frequency*framesPerSecond)
     flag = True
     while (flag):
         cam.set(cv2.CAP_PROP_POS_FRAMES, frameName)
         ret, frame = cam.read()
-        if ret:
 
+        if ret:
             name = str(frameName) + '.jpg'
             print('photo Number: ' + name)
 
+
+            frames.append((frameName,frame))
             frameName += interval
-            frames.append((frameName, frame))
         else:
             flag = False
+
 
     cam.release()
     # cv2.waitKey(0)
     # cv2.destroyAllWindows()
     print(frames)
 
-    # TODO: Implement actual algorithms for Localizing Plates
-    count = 0
+
+
+    svm, svm2, scaler = joblib.load('svm2_model.pkl'), joblib.load('svm2_model.pkl'), joblib.load('scaler.pkl')
+    print('Models loaded !<3')
+
+    #TODO: Implement actual algorithms for Localizing Plates
+    #TODO: UNCOMMENT IF U WANT TO WORK HERE
+    count=0
     listaResults = []
+    plates = []
+    previousPlate = None
+    plateTexts = []
+    previousText = ""
+    timestamp = 0
+
     for frameName, frame in frames:
         result = Localization.plate_detection(frame)
-        if result[0] is None:
+        if not result or result[0] is None:
             continue
-        image, x, y, w, h = Localization.plate_detection(frame)
-        if image is None or image.size == 0:
-            continue
-        listaResults.append(Result(frameName, x, y, w, h, frameName / framesPerSecond))
-        # cv2.imshow("Image After Crop", image)
-        # cv2.waitKey(0)
-        # cv2.destroyAllWindows()
-        plt.imshow(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
-        plt.axis('off')
-        plt.show()
-        print(f' Time Stamp (in seconds):{listaResults[count].timeFrame}, x:{listaResults[count].x}, '
-              f'y:{listaResults[count].y}, w:{listaResults[count].w}, h:{listaResults[count].h} '
-              f'and last but not least frame: {listaResults[count].frameNumber}')
 
-        # frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        # plt.imshow(frame)
-        # plt.show()
+        candidates = []
+        for contour in result:
+            candidate = Recognize.segment_and_recognize(contour.croppedImage, svm, svm2, scaler)
+            if len(candidate) == 6:
+                candidates.append((contour, candidate))
+        if candidates:
+            found = False
+            if(len(candidates) > 1):
+                for contour, candidate in candidates:
+                    if isDutchPlate(candidate):
+                        currentPlate = contour
+                        currentText = candidate
+                        found = True
+                        break
 
-        # print(type(frame), frame.shape)
+            if(not found):
+                currentPlate = candidates[0][0]
+                currentText = candidates[0][1]
+        else:
+            currentPlate = result[0]
+            currentText = Recognize.segment_and_recognize(contour.croppedImage, svm, svm2, scaler)
 
-        count += 1
-        if (count == 10):
-            break
+        # plt.title("current")
+        # showImage(currentPlate.croppedImage)
+        # if previousPlate:
+            # plt.title("previous")
+            # showImage(previousPlate.croppedImage)
 
-    # TODO: Implement actual algorithms for Recognizing Characters
+        if samePlate(currentPlate, previousPlate, currentText, previousText):
+            plateTexts.append(currentText)
+        else:
+            plateText = majorityVoting(plateTexts)
+            plateTexts = [currentText]
+            if plateText:
+                plateText = makeDucthPlate(plateText)
+                plates.append((addDutchDashes(plateText), timestamp, timestamp / framesPerSecond))
 
-    output = open(save_path, "w")
-    output.write("License plate,Frame no.,Timestamp(seconds)\n")
+            timestamp = frameName
 
-    # TODO: REMOVE THESE (below) and write the actual values in `output`
-    output.write("XS-NB-23,34,1.822\n")
-    # output.write("YOUR,STUFF,HERE\n")
-    # TODO: REMOVE THESE (above) and write the actual values in `output`
+        previousPlate = currentPlate
+        previousText = currentText
 
-    pass
 
+    # output = open(save_path, "w")
+    # output.write("License plate,Frame no.,Timestamp(seconds)\n")
+
+    plateText = majorityVoting(plateTexts)
+    if plateText:
+        plateText = addDutchDashes(makeDucthPlate(plateText))
+        plates.append((plateText, timestamp, timestamp / framesPerSecond))
+
+    plates = removeDuplicates(plates)
+
+    with open(save_path, "w") as output:
+        output.write("License plate,Frame no.,Timestamp(seconds)\n")
+        for plateText, frameNo, timestamp in plates:
+            output.write(f"{plateText},{frameNo},{timestamp:.3f}\n")
+
+
+# plateLength is the length of the text  of the plate
+def majorityVoting(strings, plateLength=6):
+    if not strings:
+        return ""
+
+    strings = [s for s in strings if len(s) == plateLength]
+    if not strings:
+        return ""
+
+    length = 6
+
+    allCandidates = []
+    for i in range(length):
+        charCounts = Counter(s[i] for s in strings)
+        totalVotes = sum(charCounts.values())
+
+        candidates = [char for char, count in charCounts.items() if count / totalVotes >= 0.2]
+
+        if not candidates:
+            candidates.append(max(charCounts, key=charCounts.get))
+
+        allCandidates.append(candidates)
+
+    for combination in product(*allCandidates):
+        plate = "".join(combination)
+        if isDutchPlate(plate):
+            return plate
+    return "".join(max(Counter(s[i] for s in strings), key=Counter(s[i] for s in strings).get) for i in range(length))
+
+def haveCommonChars(s1: str, s2: str, count=3) -> bool:
+    difference_count = defaultdict(int)
+
+    char_indices_str2 = defaultdict(list)
+    for idx, char in enumerate(s2):
+        char_indices_str2[char].append(idx)
+
+    for i, char in enumerate(s1):
+        if char in char_indices_str2:
+            for j in char_indices_str2[char]:
+                diff = i - j
+                difference_count[diff] += 1
+
+                if difference_count[diff] >= count:
+                    return True
+
+    return False
+
+def samePlate(current, previous, currentText, previousText):
+    if previous is None:
+        return False
+
+    return (haveCommonChars(currentText, previousText))
+
+def removeDuplicates(strings: list[str], count=4) -> list[str]:
+    if not strings:
+        return []
+
+    result = [strings[0]]
+
+    for i in range(1, len(strings)):
+        if not haveCommonChars(strings[i][0], strings[i - 1][0], count=count):
+            result.append(strings[i])
+
+    return result
+
+def showImage(image):
+    # image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    plt.imshow(image)
+    plt.show()
 
 class Result():
-    def __init__(self, frameNumber, x, y, w, h, timeFrame):
+    def _init_(self, frameNumber, x, y,w,h, timeFrame):
         self.frameNumber = frameNumber
-        self.x = x
-        self.y = y
+        self.x =x
+        self.y =y
         self.w = w
         self.h = h
         self.timeFrame = timeFrame
